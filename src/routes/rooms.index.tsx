@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { MOCK_ROOMS, type Room } from "@/lib/mock-data";
 import { RoomCard } from "@/components/RoomCard";
 
-export const Route = createFileRoute("/rooms")({
+export const Route = createFileRoute("/rooms/")({
   head: () => ({
     meta: [
       { title: "ロビー — BLOCK-JANKEN" },
