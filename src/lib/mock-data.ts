@@ -67,14 +67,20 @@ const ROOM_NAMES = [
   "雑談OKの部屋",
 ];
 
+// Seeded PRNG so SSR and client produce identical mock data (avoids hydration mismatch)
+let __seed = 1337;
+function srandom() {
+  __seed = (__seed * 9301 + 49297) % 233280;
+  return __seed / 233280;
+}
 function rand<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(srandom() * arr.length)];
 }
 
 export const MOCK_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
   const max = (rand([2, 2, 3]) as 2 | 3);
   const stake = (rand([1, 1, 5, 5, 10]) as 1 | 5 | 10);
-  const playerCount = Math.min(max, Math.floor(Math.random() * max) + 1);
+  const playerCount = Math.min(max, Math.floor(srandom() * max) + 1);
   const status: RoomStatus = playerCount === max ? "playing" : "waiting";
   return {
     id: `room-${1000 + i}`,
@@ -118,7 +124,7 @@ function beats(w: Hand): Hand {
 
 // My matches for mypage
 export const MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
-  const won = Math.random() > 0.36;
+  const won = srandom() > 0.36;
   const opp = rand(HOSTS);
   const stake = rand([1, 5, 10]);
   const myHand = rand(HANDS);

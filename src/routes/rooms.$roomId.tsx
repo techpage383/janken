@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { MOCK_ROOMS, HAND_EMOJI, HAND_JP, type Hand, determineWinner } from "@/lib/mock-data";
+import { MOCK_ROOMS, HAND_EMOJI, HAND_JP, ME, type Hand, determineWinner } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/rooms/$roomId")({
   head: () => ({
@@ -23,13 +23,27 @@ function RoomPage() {
   const room = MOCK_ROOMS.find((r) => r.id === roomId);
   if (!room) throw notFound();
 
+  type Mode = "player" | "spectator";
+  const isHost = room.host === ME.name;
+  const seatsLeft = room.maxPlayers - room.players.length;
+  // 既に参加済みなら player、満員ならデフォルト観戦、それ以外は player
+  const initialMode: Mode = isHost || room.players.includes(ME.name)
+    ? "player"
+    : seatsLeft > 0
+      ? "player"
+      : "spectator";
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [joined, setJoined] = useState<boolean>(isHost || room.players.includes(ME.name));
+
   const [myHand, setMyHand] = useState<Hand | null>(null);
   const [oppHand, setOppHand] = useState<Hand | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [viewers, setViewers] = useState(42);
 
   const HANDS: Hand[] = ["rock", "paper", "scissors"];
 
   function play(h: Hand) {
+    if (mode !== "player" || !joined) return;
     setMyHand(h);
     setOppHand(null);
     setResolving(true);
@@ -38,6 +52,25 @@ function RoomPage() {
       setOppHand(opp);
       setResolving(false);
     }, 1200);
+  }
+
+  function switchTo(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    setMyHand(null);
+    setOppHand(null);
+    if (next === "spectator") {
+      setJoined(false);
+      setViewers((v) => v + 1);
+    } else {
+      setViewers((v) => Math.max(0, v - 1));
+    }
+  }
+
+  function joinSeat() {
+    if (seatsLeft <= 0) return;
+    setMode("player");
+    setJoined(true);
   }
 
   const result =
@@ -69,6 +102,14 @@ function RoomPage() {
               <span className="px-2 py-1 bg-white/5 text-white/60 text-[10px] font-black rounded">
                 {room.maxPlayers}人対戦
               </span>
+              <span className={
+                "px-2 py-1 text-[10px] font-black rounded " +
+                (mode === "player"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-secondary/20 text-secondary")
+              }>
+                {mode === "player" ? (joined ? "参加中" : "参加準備") : "観戦中"}
+              </span>
             </div>
           </div>
           <div className="text-right">
@@ -79,6 +120,33 @@ function RoomPage() {
             </span>
           </div>
         </header>
+
+        {/* モード切替トグル */}
+        <div className="glass-panel rounded-xl p-2 flex items-center gap-1">
+          <button
+            onClick={() => switchTo("player")}
+            disabled={!joined && seatsLeft <= 0}
+            className={
+              "flex-1 py-2.5 text-xs font-black tracking-widest uppercase rounded-lg transition-colors " +
+              (mode === "player"
+                ? "bg-primary text-primary-foreground"
+                : "text-white/60 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed")
+            }
+          >
+            🎮 プレイヤー
+          </button>
+          <button
+            onClick={() => switchTo("spectator")}
+            className={
+              "flex-1 py-2.5 text-xs font-black tracking-widest uppercase rounded-lg transition-colors " +
+              (mode === "spectator"
+                ? "bg-secondary text-secondary-foreground"
+                : "text-white/60 hover:bg-white/5")
+            }
+          >
+            👁 観戦者
+          </button>
+        </div>
 
         <section className="glass-panel rounded-2xl p-8">
           <div className="grid grid-cols-3 items-center gap-4 mb-8">
@@ -98,27 +166,51 @@ function RoomPage() {
           </div>
 
           <div className="border-t border-border pt-6">
-            <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3 text-center">
-              YOUR HAND を選択
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              {HANDS.map((h) => (
+            {mode === "player" && joined ? (
+              <>
+                <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3 text-center">
+                  YOUR HAND を選択
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {HANDS.map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => play(h)}
+                      disabled={resolving}
+                      className={
+                        "py-6 rounded-xl border-2 transition-all flex flex-col items-center gap-2 " +
+                        (myHand === h
+                          ? "bg-primary/20 border-primary"
+                          : "border-border bg-white/5 hover:border-primary/50 hover:scale-[1.02]")
+                      }
+                    >
+                      <span className="text-5xl">{HAND_EMOJI[h]}</span>
+                      <span className="font-black text-sm">{HAND_JP[h]}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : mode === "player" && !joined ? (
+              <div className="text-center space-y-3">
+                <p className="text-[10px] font-mono text-white/40 tracking-widest">
+                  プレイヤーとして参加するには着席してください
+                </p>
                 <button
-                  key={h}
-                  onClick={() => play(h)}
-                  disabled={resolving}
-                  className={
-                    "py-6 rounded-xl border-2 transition-all flex flex-col items-center gap-2 " +
-                    (myHand === h
-                      ? "bg-primary/20 border-primary"
-                      : "border-border bg-white/5 hover:border-primary/50 hover:scale-[1.02]")
-                  }
+                  onClick={joinSeat}
+                  disabled={seatsLeft <= 0}
+                  className="px-8 py-3 bg-primary text-primary-foreground font-black hover:scale-[1.02] transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <span className="text-5xl">{HAND_EMOJI[h]}</span>
-                  <span className="font-black text-sm">{HAND_JP[h]}</span>
+                  {seatsLeft > 0 ? `+ 着席する ($${room.stake} デポジット)` : "満席"}
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-2 py-4">
+                <p className="font-accent text-2xl text-secondary">SPECTATOR MODE</p>
+                <p className="text-xs text-white/50">
+                  観戦中は手を出せません。プレイヤーの動きをリアルタイムで観戦できます。
+                </p>
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -157,11 +249,24 @@ function RoomPage() {
           <h3 className="text-sm font-black tracking-tighter">観戦中</h3>
           <div className="flex items-center gap-2">
             <span className="size-2 bg-destructive rounded-full animate-pulse" />
-            <span className="font-mono text-xs text-white/60">42 viewers</span>
+            <span className="font-mono text-xs text-white/60">{viewers} viewers</span>
           </div>
-          <button className="w-full py-2 border border-border text-[10px] font-bold tracking-widest hover:bg-white/5 uppercase">
-            観戦モードで参加
-          </button>
+          {mode === "player" ? (
+            <button
+              onClick={() => switchTo("spectator")}
+              className="w-full py-2 border border-border text-[10px] font-bold tracking-widest hover:bg-white/5 uppercase"
+            >
+              観戦モードに切替
+            </button>
+          ) : (
+            <button
+              onClick={() => switchTo("player")}
+              disabled={!joined && seatsLeft <= 0}
+              className="w-full py-2 border border-primary text-primary text-[10px] font-bold tracking-widest hover:bg-primary/10 uppercase disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {seatsLeft > 0 || joined ? "プレイヤーに切替" : "満席のため不可"}
+            </button>
+          )}
         </div>
       </aside>
     </main>
