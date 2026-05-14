@@ -133,7 +133,7 @@ function CreateRoomModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               createdAt: Date.now(),
             };
             onCreate(newRoom);
-            navigate({ to: "/rooms/$roomId", params: { roomId: id } });
+            navigate({ to: "/rooms/$roomId", params: { roomId: id }, search: { mode: "player" as const } });
           }}
           className="space-y-5"
         >
