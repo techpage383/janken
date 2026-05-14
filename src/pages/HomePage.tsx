@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useLayoutEffect } from "react";
-import { MOCK_ROOMS, MOCK_MATCHES, HAND_EMOJI } from "@/lib/mock-data";
+import { HAND_EMOJI } from "@/lib/mock-data";
+import { useDashboardData } from "@/lib/dashboard-query";
 import { RoomCard } from "@/components/RoomCard";
 
 export function HomePage() {
@@ -8,8 +9,7 @@ export function HomePage() {
     document.title = "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム";
   }, []);
 
-  const featured = MOCK_ROOMS.slice(0, 4);
-  const recent = MOCK_MATCHES.slice(0, 6);
+  const { featuredRooms, recentMatches, isApiError, isFetching } = useDashboardData();
 
   return (
     <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
@@ -49,20 +49,26 @@ export function HomePage() {
         </section>
 
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 className="text-xl font-black flex items-center gap-2">
               <span className="size-3 bg-secondary rounded-full" />
               注目のルーム <span className="text-white/40 font-mono text-sm ml-2">[FEATURED]</span>
             </h2>
-            <Link
-              to="/rooms"
-              className="text-xs font-bold tracking-widest text-white/60 hover:text-primary uppercase"
-            >
-              See all →
-            </Link>
+            <div className="flex items-center gap-4">
+              <p className="text-[10px] font-mono text-white/40 uppercase">
+                {isFetching ? "更新中… " : ""}
+                {isApiError ? "API未接続（モック）" : ""}
+              </p>
+              <Link
+                to="/rooms"
+                className="text-xs font-bold tracking-widest text-white/60 hover:text-primary uppercase"
+              >
+                See all →
+              </Link>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {featured.map((r) => (
+            {featuredRooms.map((r) => (
               <RoomCard key={r.id} room={r} />
             ))}
           </div>
@@ -79,7 +85,7 @@ export function HomePage() {
             <span className="text-[10px] font-mono text-white/40 uppercase">LIVE FEED</span>
           </div>
           <div className="divide-y divide-white/5">
-            {recent.map((m) => (
+            {recentMatches.map((m) => (
               <div key={m.id} className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-lg">{HAND_EMOJI[m.winnerHand]}</span>

@@ -17,6 +17,10 @@ dist-ssr
 .vercel
 *.local
 
+# Env (secrets)
+.env
+.env.*.local
+
 # Wrangler / Cloudflare (optional local artifacts)
 .wrangler/
 .dev.vars

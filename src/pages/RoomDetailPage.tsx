@@ -1,14 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import {
-  MOCK_ROOMS,
-  HAND_EMOJI,
-  HAND_JP,
-  ME,
-  type Hand,
-  type Room,
-  determineWinner,
-} from "@/lib/mock-data";
+import { useRoomsList } from "@/lib/rooms-query";
+import { HAND_EMOJI, HAND_JP, ME, type Hand, type Room, determineWinner } from "@/lib/mock-data";
 
 function RoomNotFound() {
   return (
@@ -25,12 +18,13 @@ export function RoomDetailPage() {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
   const searchMode = searchParams.get("mode") === "spectator" ? "spectator" : "player";
+  const { rooms: roomsList } = useRoomsList();
 
   useLayoutEffect(() => {
     document.title = "対戦ルーム — BLOCK-JANKEN";
   }, []);
 
-  const room = roomId ? MOCK_ROOMS.find((r) => r.id === roomId) : undefined;
+  const room = roomId ? roomsList.find((r) => r.id === roomId) : undefined;
   if (!room) return <RoomNotFound />;
   return <RoomDetailContent room={room} searchMode={searchMode} />;
 }

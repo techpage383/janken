@@ -1,7 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useLayoutEffect, useMemo, useState } from "react";
-import { MOCK_ROOMS, type Room } from "@/lib/mock-data";
+import { toast } from "sonner";
+import { createRoom } from "@/lib/api";
 import { RoomCard } from "@/components/RoomCard";
+import { ME, MOCK_ROOMS, type Room } from "@/lib/mock-data";
+import { roomsQueryKey, useRoomsList } from "@/lib/rooms-query";
 
 type StakeFilter = "all" | 1 | 5 | 10;
 type LobbyStatusFilter = "all" | "waiting";
@@ -11,10 +15,11 @@ export function RoomsPage() {
     document.title = "ロビー — BLOCK-JANKEN";
   }, []);
 
+  const { rooms, isApiError, isFetching } = useRoomsList();
+
   const [stake, setStake] = useState<StakeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<LobbyStatusFilter>("all");
   const [open, setOpen] = useState(false);
-  const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
 
   const filtered = useMemo(
     () =>
@@ -36,6 +41,8 @@ export function RoomsPage() {
           </h1>
           <p className="text-white/40 font-mono text-xs mt-2 tracking-widest uppercase">
             [LOBBY] {filtered.length} active rooms
+            {isFetching ? " · 更新中…" : ""}
+            {isApiError ? " · API未接続（モック表示）" : ""}
           </p>
         </div>
         <button
@@ -71,15 +78,7 @@ export function RoomsPage() {
         ))}
       </div>
 
-      {open && (
-        <CreateRoomModal
-          onClose={() => setOpen(false)}
-          onCreate={(r) => {
-            setRooms([r, ...rooms]);
-            setOpen(false);
-          }}
-        />
-      )}
+      {open && <CreateRoomModal onClose={() => setOpen(false)} />}
     </main>
   );
 }
@@ -118,15 +117,11 @@ function Chip({
   );
 }
 
-function CreateRoomModal({
-  onClose,
-  onCreate,
-}: {
-  onClose: () => void;
-  onCreate: (r: Room) => void;
-}) {
+function CreateRoomModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [stake, setStake] = useState<1 | 5 | 10>(1);
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <div
@@ -149,21 +144,27 @@ function CreateRoomModal({
           </button>
         </div>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const id = `room-${Date.now()}`;
-            const newRoom: Room = {
-              id,
-              name: "新しいルーム",
-              host: "Player_404",
-              maxPlayers: 2,
-              stake,
-              players: ["Player_404"],
-              status: "waiting",
-              createdAt: Date.now(),
-            };
-            onCreate(newRoom);
-            navigate(`/rooms/${id}?mode=player`);
+            setSubmitting(true);
+            try {
+              const room = await createRoom({
+                stake,
+                host: ME.name,
+                name: "新しいルーム",
+              });
+              queryClient.setQueryData<Room[]>(roomsQueryKey, (prev) => [
+                room,
+                ...(prev ?? MOCK_ROOMS),
+              ]);
+              await queryClient.invalidateQueries({ queryKey: roomsQueryKey });
+              onClose();
+              navigate(`/rooms/${room.id}?mode=player`);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "ルーム作成に失敗しました");
+            } finally {
+              setSubmitting(false);
+            }
           }}
           className="space-y-5"
         >
@@ -191,9 +192,10 @@ function CreateRoomModal({
           </div>
           <button
             type="submit"
-            className="w-full py-4 bg-primary text-primary-foreground font-black text-lg hover:scale-[1.01] transition-transform"
+            disabled={submitting}
+            className="w-full py-4 bg-primary text-primary-foreground font-black text-lg hover:scale-[1.01] transition-transform disabled:opacity-60"
           >
-            作成して入室
+            {submitting ? "作成中…" : "作成して入室"}
           </button>
         </form>
       </div>

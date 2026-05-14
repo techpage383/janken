@@ -8,48 +8,57 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { ME, MY_MATCHES, HAND_EMOJI, HAND_JP } from "@/lib/mock-data";
+import { HAND_EMOJI, HAND_JP, ME, type Match } from "@/lib/mock-data";
+import { useMeData } from "@/lib/me-query";
 
 export function MyAccountPage() {
   useLayoutEffect(() => {
     document.title = "マイページ — BLOCK-JANKEN";
   }, []);
 
-  const wins = MY_MATCHES.filter((m) => m.winner === ME.name).length;
-  const losses = MY_MATCHES.length - wins;
-  const winRate = ((wins / MY_MATCHES.length) * 100).toFixed(1);
-  const totalEarned = MY_MATCHES.reduce(
-    (acc, m) => acc + (m.winner === ME.name ? m.payout : -m.stake),
+  const { profile, matches, isApiError } = useMeData(ME.name);
+  const playerName = profile.name;
+
+  const wins = matches.filter((m) => m.winner === playerName).length;
+  const losses = matches.length - wins;
+  const winRate = matches.length ? ((wins / matches.length) * 100).toFixed(1) : "0.0";
+  const totalEarned = matches.reduce(
+    (acc, m) => acc + (m.winner === playerName ? m.payout : -m.stake),
     0,
   );
 
-  const sorted = [...MY_MATCHES].sort((a, b) => a.finishedAt - b.finishedAt);
+  const sorted = [...matches].sort((a, b) => a.finishedAt - b.finishedAt);
   let cum = 0;
   const chartData = sorted.map((m, i) => {
-    const delta = m.winner === ME.name ? m.payout : -m.stake;
+    const delta = m.winner === playerName ? m.payout : -m.stake;
     cum += delta;
     return { match: i + 1, balance: Number(cum.toFixed(2)) };
   });
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-6">
+      {isApiError ? (
+        <p className="text-[10px] font-mono text-white/50 uppercase">
+          API未接続 — モックデータを表示しています
+        </p>
+      ) : null}
       <header className="glass-panel rounded-2xl p-6 flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px]">
             <div className="w-full h-full rounded-full bg-card grid place-items-center font-accent text-2xl text-primary">
-              {ME.name[0]}
+              {playerName[0]}
             </div>
           </div>
           <div>
-            <h1 className="text-2xl font-black">{ME.name}</h1>
-            <p className="text-[10px] font-mono text-white/40">{ME.wallet}</p>
+            <h1 className="text-2xl font-black">{playerName}</h1>
+            <p className="text-[10px] font-mono text-white/40">{profile.wallet}</p>
             <span className="inline-block mt-1 px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-black rounded">
               RANK: シルバー II
             </span>
           </div>
         </div>
         <div className="flex gap-6">
-          <Stat label="BALANCE" value={`$${ME.balance.toFixed(2)}`} accent />
+          <Stat label="BALANCE" value={`$${profile.balance.toFixed(2)}`} accent />
           <Stat
             label="TOTAL EARNED"
             value={`${totalEarned >= 0 ? "+" : ""}$${totalEarned.toFixed(2)}`}
@@ -79,7 +88,7 @@ export function MyAccountPage() {
           </div>
           <div className="glass-panel rounded-2xl p-6">
             <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3">HAND USAGE</p>
-            <HandUsage />
+            <HandUsage matches={matches} playerName={playerName} />
           </div>
         </div>
 
@@ -139,8 +148,8 @@ export function MyAccountPage() {
             <div className="col-span-2 text-right">P/L</div>
           </div>
           <div className="divide-y divide-white/5">
-            {MY_MATCHES.slice(0, 12).map((m) => {
-              const won = m.winner === ME.name;
+            {matches.slice(0, 12).map((m) => {
+              const won = m.winner === playerName;
               const opp = won ? m.loser : m.winner;
               return (
                 <div key={m.id} className="grid grid-cols-12 gap-4 px-5 py-3 items-center text-sm">
@@ -209,16 +218,16 @@ function Stat({
   );
 }
 
-function HandUsage() {
-  const counts = MY_MATCHES.reduce(
+function HandUsage({ matches, playerName }: { matches: Match[]; playerName: string }) {
+  const counts = matches.reduce(
     (acc, m) => {
-      const mine = m.winner === ME.name ? m.winnerHand : m.loserHand;
+      const mine = m.winner === playerName ? m.winnerHand : m.loserHand;
       acc[mine]++;
       return acc;
     },
     { rock: 0, paper: 0, scissors: 0 } as Record<string, number>,
   );
-  const total = MY_MATCHES.length;
+  const total = Math.max(matches.length, 1);
   return (
     <div className="space-y-3">
       {(["rock", "paper", "scissors"] as const).map((h) => {

@@ -1,22 +1,14 @@
-import { useEffect, useLayoutEffect, useState } from "react";
-import { MOCK_MATCHES, HAND_EMOJI, HAND_JP, type Match } from "@/lib/mock-data";
+import { useLayoutEffect, useState } from "react";
+import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/mock-data";
+import { useMatchesList } from "@/lib/matches-query";
 
 export function HistoryPage() {
+  const [mounted, setMounted] = useState(false);
+  const { matches, isApiError, isFetching } = useMatchesList(120);
+
   useLayoutEffect(() => {
     document.title = "対戦履歴 — BLOCK-JANKEN";
-  }, []);
-
-  const [matches, setMatches] = useState<Match[]>(MOCK_MATCHES);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
     setMounted(true);
-    const id = setInterval(() => {
-      const sample = MOCK_MATCHES[Math.floor(Math.random() * MOCK_MATCHES.length)];
-      const fresh: Match = { ...sample, id: `live-${Date.now()}`, finishedAt: Date.now() };
-      setMatches((m) => [fresh, ...m].slice(0, 60));
-    }, 4000);
-    return () => clearInterval(id);
   }, []);
 
   return (
@@ -27,7 +19,8 @@ export function HistoryPage() {
           リアルタイム対戦履歴
         </h1>
         <p className="text-white/40 font-mono text-xs mt-2 tracking-widest uppercase">
-          [LIVE FEED] auto-updates every 4s
+          [LIVE FEED] {isFetching ? "更新中… " : ""}
+          {isApiError ? "API未接続（モック）" : "APIから4秒ごとに更新"}
         </p>
       </header>
 
@@ -41,45 +34,46 @@ export function HistoryPage() {
           <div className="col-span-1 text-right">PAYOUT</div>
         </div>
         <div className="divide-y divide-white/5">
-          {matches.map((m) => {
-            const ago = mounted ? formatAgo(m.finishedAt) : "—";
-            return (
-              <div
-                key={m.id}
-                className="grid grid-cols-12 gap-4 px-5 py-3 items-center hover:bg-white/5 transition-colors text-sm"
-              >
-                <div className="col-span-1 font-mono text-xs text-white/40">{ago}</div>
-                <div className="col-span-3 flex items-center gap-2">
-                  <div className="size-7 rounded-full bg-success/20 grid place-items-center text-[10px] font-black text-success">
-                    W
-                  </div>
-                  <span className="font-bold truncate">{m.winner}</span>
-                </div>
-                <div className="col-span-3 flex items-center gap-2 text-white/60">
-                  <div className="size-7 rounded-full bg-white/5 grid place-items-center text-[10px] font-black">
-                    L
-                  </div>
-                  <span className="truncate">{m.loser}</span>
-                </div>
-                <div className="col-span-2 flex items-center justify-center gap-2 text-2xl">
-                  <span title={HAND_JP[m.winnerHand]}>{HAND_EMOJI[m.winnerHand]}</span>
-                  <span className="text-white/20 text-sm">vs</span>
-                  <span className="opacity-50" title={HAND_JP[m.loserHand]}>
-                    {HAND_EMOJI[m.loserHand]}
-                  </span>
-                </div>
-                <div className="col-span-2 truncate text-xs text-white/60">
-                  ${m.stake} · {m.roomName}
-                </div>
-                <div className="col-span-1 text-right font-accent text-lg text-success">
-                  +${m.payout.toFixed(2)}
-                </div>
-              </div>
-            );
-          })}
+          {matches.map((m) => (
+            <MatchRow key={m.id} m={m} mounted={mounted} />
+          ))}
         </div>
       </div>
     </main>
+  );
+}
+
+function MatchRow({ m, mounted }: { m: Match; mounted: boolean }) {
+  const ago = mounted ? formatAgo(m.finishedAt) : "—";
+  return (
+    <div className="grid grid-cols-12 gap-4 px-5 py-3 items-center hover:bg-white/5 transition-colors text-sm">
+      <div className="col-span-1 font-mono text-xs text-white/40">{ago}</div>
+      <div className="col-span-3 flex items-center gap-2">
+        <div className="size-7 rounded-full bg-success/20 grid place-items-center text-[10px] font-black text-success">
+          W
+        </div>
+        <span className="font-bold truncate">{m.winner}</span>
+      </div>
+      <div className="col-span-3 flex items-center gap-2 text-white/60">
+        <div className="size-7 rounded-full bg-white/5 grid place-items-center text-[10px] font-black">
+          L
+        </div>
+        <span className="truncate">{m.loser}</span>
+      </div>
+      <div className="col-span-2 flex items-center justify-center gap-2 text-2xl">
+        <span title={HAND_JP[m.winnerHand]}>{HAND_EMOJI[m.winnerHand]}</span>
+        <span className="text-white/20 text-sm">vs</span>
+        <span className="opacity-50" title={HAND_JP[m.loserHand]}>
+          {HAND_EMOJI[m.loserHand]}
+        </span>
+      </div>
+      <div className="col-span-2 truncate text-xs text-white/60">
+        ${m.stake} · {m.roomName}
+      </div>
+      <div className="col-span-1 text-right font-accent text-lg text-success">
+        +${m.payout.toFixed(2)}
+      </div>
+    </div>
   );
 }
 
