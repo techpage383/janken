@@ -4,6 +4,7 @@ import { MOCK_ROOMS, type Room } from "@/lib/mock-data";
 import { RoomCard } from "@/components/RoomCard";
 
 type StakeFilter = "all" | 1 | 5 | 10;
+type LobbyStatusFilter = "all" | "waiting";
 
 export function RoomsPage() {
   useLayoutEffect(() => {
@@ -11,12 +12,18 @@ export function RoomsPage() {
   }, []);
 
   const [stake, setStake] = useState<StakeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<LobbyStatusFilter>("all");
   const [open, setOpen] = useState(false);
   const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
 
   const filtered = useMemo(
-    () => rooms.filter((r) => stake === "all" || r.stake === stake),
-    [rooms, stake],
+    () =>
+      rooms.filter((r) => {
+        const stakeOk = stake === "all" || r.stake === stake;
+        const statusOk = statusFilter === "all" || r.status === "waiting";
+        return stakeOk && statusOk;
+      }),
+    [rooms, stake, statusFilter],
   );
 
   return (
@@ -40,7 +47,15 @@ export function RoomsPage() {
         </button>
       </header>
 
-      <div className="glass-panel rounded-xl p-4 flex flex-wrap gap-4">
+      <div className="glass-panel rounded-xl p-4 flex flex-wrap gap-6">
+        <FilterGroup label="表示">
+          <Chip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>
+            全体
+          </Chip>
+          <Chip active={statusFilter === "waiting"} onClick={() => setStatusFilter("waiting")}>
+            待機中
+          </Chip>
+        </FilterGroup>
         <FilterGroup label="STAKE">
           {(["all", 1, 5, 10] as const).map((v) => (
             <Chip key={String(v)} active={stake === v} onClick={() => setStake(v)}>
