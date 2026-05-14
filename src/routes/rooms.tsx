@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { MOCK_ROOMS, type Room } from "@/lib/mock-data";
-import { RoomCard } from "./index";
+import { RoomCard } from "@/components/RoomCard";
 
 export const Route = createFileRoute("/rooms")({
   head: () => ({
