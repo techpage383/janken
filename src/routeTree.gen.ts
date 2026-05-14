@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WatchRouteImport } from './routes/watch'
 import { Route as RoomsRouteImport } from './routes/rooms'
 import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RoomsRoomIdRouteImport } from './routes/rooms.$roomId'
 
+const WatchRoute = WatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoomsRoute = RoomsRouteImport.update({
   id: '/rooms',
   path: '/rooms',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/mypage': typeof MypageRoute
   '/rooms': typeof RoomsRouteWithChildren
+  '/watch': typeof WatchRoute
   '/rooms/$roomId': typeof RoomsRoomIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/mypage': typeof MypageRoute
   '/rooms': typeof RoomsRouteWithChildren
+  '/watch': typeof WatchRoute
   '/rooms/$roomId': typeof RoomsRoomIdRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,28 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/mypage': typeof MypageRoute
   '/rooms': typeof RoomsRouteWithChildren
+  '/watch': typeof WatchRoute
   '/rooms/$roomId': typeof RoomsRoomIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/mypage' | '/rooms' | '/rooms/$roomId'
+  fullPaths:
+    | '/'
+    | '/history'
+    | '/mypage'
+    | '/rooms'
+    | '/watch'
+    | '/rooms/$roomId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/mypage' | '/rooms' | '/rooms/$roomId'
-  id: '__root__' | '/' | '/history' | '/mypage' | '/rooms' | '/rooms/$roomId'
+  to: '/' | '/history' | '/mypage' | '/rooms' | '/watch' | '/rooms/$roomId'
+  id:
+    | '__root__'
+    | '/'
+    | '/history'
+    | '/mypage'
+    | '/rooms'
+    | '/watch'
+    | '/rooms/$roomId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,10 +98,18 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   MypageRoute: typeof MypageRoute
   RoomsRoute: typeof RoomsRouteWithChildren
+  WatchRoute: typeof WatchRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/watch': {
+      id: '/watch'
+      path: '/watch'
+      fullPath: '/watch'
+      preLoaderRoute: typeof WatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rooms': {
       id: '/rooms'
       path: '/rooms'
@@ -133,6 +163,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   MypageRoute: MypageRoute,
   RoomsRoute: RoomsRouteWithChildren,
+  WatchRoute: WatchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

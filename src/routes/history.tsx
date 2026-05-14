@@ -14,8 +14,10 @@ export const Route = createFileRoute("/history")({
 
 function HistoryPage() {
   const [matches, setMatches] = useState<Match[]>(MOCK_MATCHES);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const id = setInterval(() => {
       const sample = MOCK_MATCHES[Math.floor(Math.random() * MOCK_MATCHES.length)];
       const fresh: Match = { ...sample, id: `live-${Date.now()}`, finishedAt: Date.now() };
@@ -47,7 +49,7 @@ function HistoryPage() {
         </div>
         <div className="divide-y divide-white/5">
           {matches.map((m) => {
-            const ago = formatAgo(m.finishedAt);
+            const ago = mounted ? formatAgo(m.finishedAt) : "—";
             return (
               <div key={m.id} className="grid grid-cols-12 gap-4 px-5 py-3 items-center hover:bg-white/5 transition-colors text-sm">
                 <div className="col-span-1 font-mono text-xs text-white/40">{ago}</div>

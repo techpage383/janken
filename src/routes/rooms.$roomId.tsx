@@ -9,6 +9,9 @@ export const Route = createFileRoute("/rooms/$roomId")({
       { name: "description", content: "じゃんけんルームで対戦・観戦する。" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    mode: s.mode === "spectator" ? ("spectator" as const) : ("player" as const),
+  }),
   component: RoomPage,
   notFoundComponent: () => (
     <div className="max-w-xl mx-auto p-12 text-center">
@@ -20,18 +23,22 @@ export const Route = createFileRoute("/rooms/$roomId")({
 
 function RoomPage() {
   const { roomId } = Route.useParams();
+  const { mode: searchMode } = Route.useSearch();
   const room = MOCK_ROOMS.find((r) => r.id === roomId);
   if (!room) throw notFound();
 
   type Mode = "player" | "spectator";
   const isHost = room.host === ME.name;
   const seatsLeft = room.maxPlayers - room.players.length;
-  // 既に参加済みなら player、満員ならデフォルト観戦、それ以外は player
-  const initialMode: Mode = isHost || room.players.includes(ME.name)
-    ? "player"
-    : seatsLeft > 0
-      ? "player"
-      : "spectator";
+  // URL ?mode=spectator が最優先。次に既参加・空席状況でデフォルト判定
+  const initialMode: Mode =
+    searchMode === "spectator"
+      ? "spectator"
+      : isHost || room.players.includes(ME.name)
+        ? "player"
+        : seatsLeft > 0
+          ? "player"
+          : "spectator";
   const [mode, setMode] = useState<Mode>(initialMode);
   const [joined, setJoined] = useState<boolean>(isHost || room.players.includes(ME.name));
 

@@ -4,11 +4,7 @@ import type { Room } from "@/lib/mock-data";
 export function RoomCard({ room }: { room: Room }) {
   const isFull = room.players.length >= room.maxPlayers;
   return (
-    <Link
-      to="/rooms/$roomId"
-      params={{ roomId: room.id }}
-      className="glass-panel p-5 rounded-xl hover:border-primary/50 transition-colors block group"
-    >
+    <div className="glass-panel p-5 rounded-xl hover:border-primary/50 transition-colors group">
       <div className="flex justify-between items-start mb-4">
         <div className="min-w-0">
           <span className="text-[10px] font-mono text-white/40 block mb-1 uppercase tracking-widest">
@@ -18,7 +14,7 @@ export function RoomCard({ room }: { room: Room }) {
         </div>
         <div className="font-accent text-3xl text-primary shrink-0 ml-3">${room.stake}</div>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2">
             {Array.from({ length: room.maxPlayers }).map((_, i) => (
@@ -45,6 +41,29 @@ export function RoomCard({ room }: { room: Room }) {
           <span className="px-3 py-1 bg-success/20 text-success text-[10px] font-black tracking-tighter rounded">募集中</span>
         )}
       </div>
-    </Link>
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          to="/rooms/$roomId"
+          params={{ roomId: room.id }}
+          search={{ mode: "player" as const }}
+          className={
+            "py-2 text-center text-[11px] font-black tracking-widest uppercase rounded-md transition-colors " +
+            (isFull
+              ? "bg-white/5 text-white/30 cursor-not-allowed pointer-events-none"
+              : "bg-primary text-primary-foreground hover:opacity-90")
+          }
+        >
+          🎮 参加する
+        </Link>
+        <Link
+          to="/rooms/$roomId"
+          params={{ roomId: room.id }}
+          search={{ mode: "spectator" as const }}
+          className="py-2 text-center text-[11px] font-black tracking-widest uppercase rounded-md bg-secondary/20 text-secondary border border-secondary/40 hover:bg-secondary/30 transition-colors"
+        >
+          👁 観戦する
+        </Link>
+      </div>
+    </div>
   );
 }
