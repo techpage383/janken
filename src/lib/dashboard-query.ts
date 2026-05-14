@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboard } from "@/lib/api";
-import { MOCK_MATCHES, MOCK_ROOMS } from "@/lib/mock-data";
 
 export function useDashboardQuery() {
   return useQuery({
@@ -14,9 +13,10 @@ export function useDashboardQuery() {
 export function useDashboardData() {
   const q = useDashboardQuery();
   return {
-    featuredRooms: q.data?.featuredRooms ?? MOCK_ROOMS.slice(0, 4),
-    recentMatches: q.data?.recentMatches ?? MOCK_MATCHES.slice(0, 6),
-    isApiError: q.isError,
+    featuredRooms: q.data?.featuredRooms ?? [],
+    recentMatches: q.data?.recentMatches ?? [],
+    isError: q.isError,
     isFetching: q.isFetching,
+    isPending: q.isPending,
   };
 }

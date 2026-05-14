@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchRooms } from "@/lib/api";
-import { MOCK_ROOMS } from "@/lib/mock-data";
 
 export const roomsQueryKey = ["rooms"] as const;
 
@@ -13,13 +12,13 @@ export function useRoomsQuery() {
   });
 }
 
-/** List for UI: API data when available, otherwise mock (including while loading or on error). */
 export function useRoomsList() {
   const q = useRoomsQuery();
   return {
-    rooms: q.data ?? MOCK_ROOMS,
-    isApiError: q.isError,
+    rooms: q.data ?? [],
+    isError: q.isError,
     isFetching: q.isFetching,
+    isPending: q.isPending,
     refetch: q.refetch,
   };
 }

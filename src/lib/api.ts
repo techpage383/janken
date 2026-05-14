@@ -1,4 +1,4 @@
-import type { Match, Room } from "@/lib/mock-data";
+import type { Match, Room } from "@/lib/janken-types";
 
 export function getApiBase(): string {
   const raw = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -14,6 +14,18 @@ export type DashboardResponse = {
   featuredRooms: Room[];
   recentMatches: Match[];
 };
+
+export async function fetchRoomById(id: string, signal?: AbortSignal): Promise<Room> {
+  const res = await fetch(`${getApiBase()}/api/rooms/${encodeURIComponent(id)}`, {
+    credentials: "include",
+    signal,
+  });
+  if (!res.ok) {
+    throw new Error(`GET /api/rooms/:id failed: ${res.status}`);
+  }
+  const body = (await res.json()) as { room: Room };
+  return body.room;
+}
 
 export async function fetchRooms(signal?: AbortSignal): Promise<Room[]> {
   const res = await fetch(`${getApiBase()}/api/rooms`, {

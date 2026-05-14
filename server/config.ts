@@ -1,6 +1,14 @@
 import "dotenv/config";
 
-const defaultOrigins = ["http://localhost:8080", "http://127.0.0.1:8080"];
+/** Local dev: match the URL in the browser (scheme + host + port). Vite default here is 8080; 5173 is common if you change `vite.config.ts`. */
+const defaultOrigins = [
+  "http://localhost:8080",
+  "http://127.0.0.1:8080",
+  "http://[::1]:8080",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://[::1]:5173",
+];
 
 /** XAMPP / local MySQL or MariaDB (phpMyAdmin). Create database `janken` before first server start. */
 export const config = {

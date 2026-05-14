@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { Room } from "@/lib/mock-data";
+import type { Room } from "@/lib/janken-types";
 
 export function RoomCard({ room }: { room: Room }) {
   const isFull = room.players.length >= room.maxPlayers;

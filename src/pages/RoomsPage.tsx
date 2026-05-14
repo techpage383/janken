@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createRoom } from "@/lib/api";
+import type { Room } from "@/lib/janken-types";
+import { PLAYER_NAME } from "@/lib/player";
 import { RoomCard } from "@/components/RoomCard";
-import { ME, MOCK_ROOMS, type Room } from "@/lib/mock-data";
 import { roomsQueryKey, useRoomsList } from "@/lib/rooms-query";
 
 type StakeFilter = "all" | 1 | 5 | 10;
@@ -15,7 +16,7 @@ export function RoomsPage() {
     document.title = "ロビー — BLOCK-JANKEN";
   }, []);
 
-  const { rooms, isApiError, isFetching } = useRoomsList();
+  const { rooms, isError, isFetching } = useRoomsList();
 
   const [stake, setStake] = useState<StakeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<LobbyStatusFilter>("all");
@@ -42,7 +43,7 @@ export function RoomsPage() {
           <p className="text-white/40 font-mono text-xs mt-2 tracking-widest uppercase">
             [LOBBY] {filtered.length} active rooms
             {isFetching ? " · 更新中…" : ""}
-            {isApiError ? " · API未接続（モック表示）" : ""}
+            {isError ? " · API接続エラー" : ""}
           </p>
         </div>
         <button
@@ -150,13 +151,10 @@ function CreateRoomModal({ onClose }: { onClose: () => void }) {
             try {
               const room = await createRoom({
                 stake,
-                host: ME.name,
+                host: PLAYER_NAME,
                 name: "新しいルーム",
               });
-              queryClient.setQueryData<Room[]>(roomsQueryKey, (prev) => [
-                room,
-                ...(prev ?? MOCK_ROOMS),
-              ]);
+              queryClient.setQueryData<Room[]>(roomsQueryKey, (prev) => [room, ...(prev ?? [])]);
               await queryClient.invalidateQueries({ queryKey: roomsQueryKey });
               onClose();
               navigate(`/rooms/${room.id}?mode=player`);

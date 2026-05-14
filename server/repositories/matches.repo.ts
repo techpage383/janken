@@ -1,4 +1,4 @@
-import type { Hand, Match } from "../../src/lib/mock-data.ts";
+import type { Hand, Match } from "../../src/lib/janken-types.ts";
 import { pool } from "../db/pool.ts";
 
 type MatchRow = {

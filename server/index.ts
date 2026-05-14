@@ -31,11 +31,29 @@ async function main(): Promise<void> {
   await migrate();
   await seedIfEmpty();
   const app = createApp();
-  app.listen(config.port, () => {
+  const server = app.listen(config.port);
+
+  server.once("listening", () => {
     console.log(`Express API listening on http://localhost:${config.port}`);
     console.log(
       `MySQL: ${config.mysql.user}@${config.mysql.host}:${config.mysql.port}/${config.mysql.database}`,
     );
+  });
+
+  server.once("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `\n[server] Port ${config.port} is already in use.\n` +
+          `  Set PORT=3001 in .env (then set VITE_API_URL=http://localhost:3001 for the SPA), or stop the other process.\n` +
+          `  Windows: netstat -ano | findstr :${config.port}  →  taskkill /PID <pid> /F\n`,
+      );
+      void closePool();
+      process.exit(1);
+      return;
+    }
+    console.error(err);
+    void closePool();
+    process.exit(1);
   });
 }
 

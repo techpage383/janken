@@ -1,10 +1,10 @@
 import { useLayoutEffect, useState } from "react";
-import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/mock-data";
+import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/janken-types";
 import { useMatchesList } from "@/lib/matches-query";
 
 export function HistoryPage() {
   const [mounted, setMounted] = useState(false);
-  const { matches, isApiError, isFetching } = useMatchesList(120);
+  const { matches, isError, isFetching } = useMatchesList(120);
 
   useLayoutEffect(() => {
     document.title = "対戦履歴 — BLOCK-JANKEN";
@@ -20,7 +20,7 @@ export function HistoryPage() {
         </h1>
         <p className="text-white/40 font-mono text-xs mt-2 tracking-widest uppercase">
           [LIVE FEED] {isFetching ? "更新中… " : ""}
-          {isApiError ? "API未接続（モック）" : "APIから4秒ごとに更新"}
+          {isError ? "API接続エラー" : "APIから4秒ごとに更新"}
         </p>
       </header>
 

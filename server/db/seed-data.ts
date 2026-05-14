@@ -1,43 +1,9 @@
-export type Hand = "rock" | "paper" | "scissors";
-export type RoomStatus = "waiting" | "playing" | "finished";
+/**
+ * Initial rows for an empty database (server-only). Not bundled to the SPA.
+ */
+import type { Hand, Match, Room, RoomStatus } from "../../src/lib/janken-types.ts";
 
-export interface Room {
-  id: string;
-  name: string;
-  host: string;
-  maxPlayers: 2;
-  stake: 1 | 5 | 10;
-  players: string[];
-  status: RoomStatus;
-  createdAt: number;
-}
-
-export interface Match {
-  id: string;
-  roomId: string;
-  roomName: string;
-  stake: number;
-  winner: string;
-  loser: string;
-  winnerHand: Hand;
-  loserHand: Hand;
-  payout: number;
-  finishedAt: number;
-}
-
-export const HAND_EMOJI: Record<Hand, string> = {
-  rock: "✊",
-  paper: "✋",
-  scissors: "✌️",
-};
-
-export const HAND_JP: Record<Hand, string> = {
-  rock: "グー",
-  paper: "パー",
-  scissors: "チョキ",
-};
-
-export const ME = {
+export const SEED_PLAYER = {
   name: "Player_404",
   wallet: "0x71C...8e9A",
   balance: 1245.5,
@@ -67,7 +33,6 @@ const ROOM_NAMES = [
   "雑談OKの部屋",
 ];
 
-// Pure per-index hash so SSR & client produce identical mock data (no shared state).
 function hash(n: number, salt = 0): number {
   let x = (n + 1) * 2654435761 + salt * 0x9e3779b1;
   x = (x ^ (x >>> 16)) >>> 0;
@@ -77,12 +42,14 @@ function hash(n: number, salt = 0): number {
   x = (x ^ (x >>> 16)) >>> 0;
   return x / 0xffffffff;
 }
+
 function pick<T>(arr: T[], n: number, salt = 0): T {
   return arr[Math.floor(hash(n, salt) * arr.length)];
 }
 
-const FIXED_NOW = 1747200000000; // stable timestamp for SSR/client parity
-export const MOCK_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
+const FIXED_NOW = 1747200000000;
+
+export const SEED_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
   const stake = pick<1 | 5 | 10>([1, 1, 5, 5, 10], i, 2);
   const playerCount = Math.min(2, Math.floor(hash(i, 3) * 2) + 1);
   const status: RoomStatus = playerCount === 2 ? "playing" : "waiting";
@@ -102,7 +69,13 @@ export const MOCK_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
 
 const HANDS: Hand[] = ["rock", "paper", "scissors"];
 
-export const MOCK_MATCHES: Match[] = Array.from({ length: 30 }, (_, i) => {
+function beats(w: Hand): Hand {
+  if (w === "rock") return "scissors";
+  if (w === "paper") return "rock";
+  return "paper";
+}
+
+const SEED_GLOBAL_MATCHES: Match[] = Array.from({ length: 30 }, (_, i) => {
   const winner = pick(HOSTS, i, 10);
   let loser = pick(HOSTS, i, 11);
   let salt = 12;
@@ -123,14 +96,7 @@ export const MOCK_MATCHES: Match[] = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-function beats(w: Hand): Hand {
-  if (w === "rock") return "scissors";
-  if (w === "paper") return "rock";
-  return "paper";
-}
-
-// My matches for mypage
-export const MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
+const SEED_MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
   const won = hash(i, 30) > 0.36;
   const opp = pick(HOSTS, i, 31);
   const stake = pick([1, 5, 10], i, 32);
@@ -140,8 +106,8 @@ export const MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
     roomId: `room-${1000 + (i % 8)}`,
     roomName: pick(ROOM_NAMES, i, 34),
     stake,
-    winner: won ? ME.name : opp,
-    loser: won ? opp : ME.name,
+    winner: won ? SEED_PLAYER.name : opp,
+    loser: won ? opp : SEED_PLAYER.name,
     winnerHand: myHand,
     loserHand: beats(myHand),
     payout: stake * 1.9,
@@ -149,13 +115,9 @@ export const MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
   };
 });
 
-export function determineWinner(a: Hand, b: Hand): "a" | "b" | "draw" {
-  if (a === b) return "draw";
-  if (
-    (a === "rock" && b === "scissors") ||
-    (a === "paper" && b === "rock") ||
-    (a === "scissors" && b === "paper")
-  )
-    return "a";
-  return "b";
+export function allSeedMatches(): Match[] {
+  const byId = new Map<string, Match>();
+  for (const m of SEED_GLOBAL_MATCHES) byId.set(m.id, m);
+  for (const m of SEED_MY_MATCHES) byId.set(m.id, m);
+  return [...byId.values()];
 }

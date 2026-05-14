@@ -9,5 +9,5 @@
     "types": ["node"],
     "resolveJsonModule": true
   },
-  "include": ["./**/*.ts", "../src/lib/mock-data.ts"]
+  "include": ["./**/*.ts", "../src/lib/janken-types.ts"]
 }

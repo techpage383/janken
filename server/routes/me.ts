@@ -1,3 +1,4 @@
+import { SEED_PLAYER } from "../db/seed-data.ts";
 import { Router } from "express";
 import { HttpError } from "../lib/http-error.ts";
 import { asyncHandler } from "../middleware/async-handler.ts";
@@ -11,7 +12,7 @@ meRouter.get(
   asyncHandler(async (req, res) => {
     const header = req.headers["x-player-name"];
     const name =
-      typeof header === "string" && header.trim().length > 0 ? header.trim() : "Player_404";
+      typeof header === "string" && header.trim().length > 0 ? header.trim() : SEED_PLAYER.name;
     const profile = await playersRepo.findPlayer(name);
     if (!profile) throw new HttpError(404, "Unknown player");
     const matches = await matchesRepo.listMatchesForPlayer(name, 100);

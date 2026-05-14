@@ -1,12 +1,5 @@
-import { ME, MOCK_MATCHES, MOCK_ROOMS, MY_MATCHES, type Match } from "../../src/lib/mock-data.ts";
+import { allSeedMatches, SEED_PLAYER, SEED_ROOMS } from "./seed-data.ts";
 import { pool } from "./pool.ts";
-
-function allMatches(): Match[] {
-  const byId = new Map<string, Match>();
-  for (const m of MOCK_MATCHES) byId.set(m.id, m);
-  for (const m of MY_MATCHES) byId.set(m.id, m);
-  return [...byId.values()];
-}
 
 export async function seedIfEmpty(): Promise<void> {
   const [rows] = await pool.query("SELECT COUNT(*) AS c FROM rooms");
@@ -18,12 +11,12 @@ export async function seedIfEmpty(): Promise<void> {
     await conn.beginTransaction();
 
     await conn.query(`INSERT INTO players (name, wallet, balance) VALUES (?, ?, ?)`, [
-      ME.name,
-      ME.wallet,
-      ME.balance,
+      SEED_PLAYER.name,
+      SEED_PLAYER.wallet,
+      SEED_PLAYER.balance,
     ]);
 
-    for (const r of MOCK_ROOMS) {
+    for (const r of SEED_ROOMS) {
       await conn.query(
         `INSERT INTO rooms (id, name, host, max_players, stake, status, players, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -40,7 +33,7 @@ export async function seedIfEmpty(): Promise<void> {
       );
     }
 
-    for (const m of allMatches()) {
+    for (const m of allSeedMatches()) {
       await conn.query(
         `INSERT INTO matches (id, room_id, room_name, stake, winner, loser, winner_hand, loser_hand, payout, finished_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

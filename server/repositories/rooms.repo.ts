@@ -1,4 +1,4 @@
-import type { Room, RoomStatus } from "../../src/lib/mock-data.ts";
+import type { Room, RoomStatus } from "../../src/lib/janken-types.ts";
 import { pool } from "../db/pool.ts";
 
 type RoomRow = {

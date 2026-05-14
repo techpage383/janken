@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { ME } from "@/lib/mock-data";
+import { useMeData } from "@/lib/me-query";
 
 const NAV = [
   { to: "/", label: "TOP" },
@@ -10,51 +10,56 @@ const NAV = [
 
 export function AppShell() {
   const { pathname: path } = useLocation();
+  const { profile, isPending, isError } = useMeData();
+
+  const balanceLabel = isPending
+    ? "…"
+    : isError || !profile
+      ? "—"
+      : `$${profile.balance.toFixed(2)}`;
 
   return (
     <div className="min-h-screen bg-background text-foreground font-display">
       <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-6 py-3">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="block">
-            <h1 className="text-2xl font-black tracking-tighter italic text-primary leading-none">
-              BLOCK-JANKEN
-              <span className="text-[10px] not-italic font-bold text-white/40 block tracking-normal mt-0.5">
-                ブロック・じゃんけん
-              </span>
-            </h1>
-          </Link>
-          <div className="hidden md:flex gap-6 text-sm font-bold tracking-widest">
-            {NAV.map((n) => {
-              const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
-              return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  className={
-                    active
-                      ? "text-primary border-b-2 border-primary pb-1"
-                      : "text-white/60 hover:text-white transition-colors"
-                  }
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
+          <div className="flex items-center gap-8">
+            <Link to="/" className="block">
+              <h1 className="text-2xl font-black tracking-tighter italic text-primary leading-none">
+                BLOCK-JANKEN
+                <span className="text-[10px] not-italic font-bold text-white/40 block tracking-normal mt-0.5">
+                  ブロック・じゃんけん
+                </span>
+              </h1>
+            </Link>
+            <div className="hidden md:flex gap-6 text-sm font-bold tracking-widest">
+              {NAV.map((n) => {
+                const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
+                return (
+                  <Link
+                    key={n.to}
+                    to={n.to}
+                    className={
+                      active
+                        ? "text-primary border-b-2 border-primary pb-1"
+                        : "text-white/60 hover:text-white transition-colors"
+                    }
+                  >
+                    {n.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="px-3 py-1 bg-white/5 rounded-full border border-border flex items-center gap-2">
-            <div className="size-2 rounded-full bg-success animate-pulse" />
-            <span className="font-mono text-xs uppercase tracking-tighter">Online: 1,284</span>
+          <div className="flex items-center gap-4">
+            <div className="px-3 py-1 bg-white/5 rounded-full border border-border flex items-center gap-2">
+              <div className="size-2 rounded-full bg-success animate-pulse" />
+              <span className="font-mono text-xs uppercase tracking-tighter">Online: 1,284</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-border">
+              <span className="text-[10px] text-white/40 font-mono">BAL</span>
+              <span className="font-accent text-lg text-primary leading-none">{balanceLabel}</span>
+            </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-border">
-            <span className="text-[10px] text-white/40 font-mono">BAL</span>
-            <span className="font-accent text-lg text-primary leading-none">
-              ${ME.balance.toFixed(2)}
-            </span>
-          </div>
-        </div>
         </div>
       </nav>
 

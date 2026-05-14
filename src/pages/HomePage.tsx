@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useLayoutEffect } from "react";
-import { HAND_EMOJI } from "@/lib/mock-data";
+import { HAND_EMOJI } from "@/lib/janken-types";
 import { useDashboardData } from "@/lib/dashboard-query";
 import { RoomCard } from "@/components/RoomCard";
 
@@ -9,7 +9,7 @@ export function HomePage() {
     document.title = "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム";
   }, []);
 
-  const { featuredRooms, recentMatches, isApiError, isFetching } = useDashboardData();
+  const { featuredRooms, recentMatches, isError, isFetching } = useDashboardData();
 
   return (
     <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
@@ -57,7 +57,7 @@ export function HomePage() {
             <div className="flex items-center gap-4">
               <p className="text-[10px] font-mono text-white/40 uppercase">
                 {isFetching ? "更新中… " : ""}
-                {isApiError ? "API未接続（モック）" : ""}
+                {isError ? "API接続エラー" : ""}
               </p>
               <Link
                 to="/rooms"

@@ -1,15 +1,25 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useRoomsList } from "@/lib/rooms-query";
-import { HAND_EMOJI, HAND_JP, ME, type Hand, type Room, determineWinner } from "@/lib/mock-data";
+import { useRoomDetailQuery } from "@/lib/room-detail-query";
+import { HAND_EMOJI, HAND_JP, type Hand, type Room, determineWinner } from "@/lib/janken-types";
+import { PLAYER_NAME } from "@/lib/player";
 
 function RoomNotFound() {
   return (
     <div className="max-w-xl mx-auto p-12 text-center">
       <h1 className="text-3xl font-black mb-4">ルームが見つかりません</h1>
+      <p className="text-white/50 text-sm mb-6">APIからルームを取得できませんでした。</p>
       <Link to="/rooms" className="text-primary underline">
         ロビーへ戻る
       </Link>
+    </div>
+  );
+}
+
+function RoomLoading() {
+  return (
+    <div className="max-w-xl mx-auto p-12 text-center font-mono text-sm text-white/50">
+      ルームを読み込み中…
     </div>
   );
 }
@@ -18,14 +28,15 @@ export function RoomDetailPage() {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
   const searchMode = searchParams.get("mode") === "spectator" ? "spectator" : "player";
-  const { rooms: roomsList } = useRoomsList();
+  const { data: room, isPending, isError } = useRoomDetailQuery(roomId);
 
   useLayoutEffect(() => {
     document.title = "対戦ルーム — BLOCK-JANKEN";
   }, []);
 
-  const room = roomId ? roomsList.find((r) => r.id === roomId) : undefined;
-  if (!room) return <RoomNotFound />;
+  if (!roomId) return <RoomNotFound />;
+  if (isPending) return <RoomLoading />;
+  if (isError || !room) return <RoomNotFound />;
   return <RoomDetailContent room={room} searchMode={searchMode} />;
 }
 
@@ -37,19 +48,19 @@ function RoomDetailContent({
   searchMode: "player" | "spectator";
 }) {
   type Mode = "player" | "spectator";
-  const isHost = room.host === ME.name;
+  const isHost = room.host === PLAYER_NAME;
   const seatsLeft = room.maxPlayers - room.players.length;
   // URL ?mode=spectator が最優先。次に既参加・空席状況でデフォルト判定
   const initialMode: Mode =
     searchMode === "spectator"
       ? "spectator"
-      : isHost || room.players.includes(ME.name)
+      : isHost || room.players.includes(PLAYER_NAME)
         ? "player"
         : seatsLeft > 0
           ? "player"
           : "spectator";
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [joined, setJoined] = useState<boolean>(isHost || room.players.includes(ME.name));
+  const [joined, setJoined] = useState<boolean>(isHost || room.players.includes(PLAYER_NAME));
 
   const [myHand, setMyHand] = useState<Hand | null>(null);
   const [oppHand, setOppHand] = useState<Hand | null>(null);
@@ -284,7 +295,7 @@ function RoomDetailContent({
 
           <div className="grid grid-cols-3 items-center gap-4 mb-8">
             <PlayerSlot
-              name={mode === "spectator" ? ME.name : "YOU"}
+              name={mode === "spectator" ? PLAYER_NAME : "YOU"}
               hand={myHand}
               highlight={result === "win"}
               phase={phase}

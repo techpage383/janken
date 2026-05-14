@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchMatches } from "@/lib/api";
-import { MOCK_MATCHES } from "@/lib/mock-data";
 
 export function useMatchesFeedQuery(limit = 120) {
   return useQuery({
@@ -15,8 +14,9 @@ export function useMatchesFeedQuery(limit = 120) {
 export function useMatchesList(limit = 120) {
   const q = useMatchesFeedQuery(limit);
   return {
-    matches: q.data ?? MOCK_MATCHES,
-    isApiError: q.isError,
+    matches: q.data ?? [],
+    isError: q.isError,
     isFetching: q.isFetching,
+    isPending: q.isPending,
   };
 }

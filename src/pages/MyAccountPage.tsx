@@ -8,7 +8,8 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { HAND_EMOJI, HAND_JP, ME, type Match } from "@/lib/mock-data";
+import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/janken-types";
+import { PLAYER_NAME } from "@/lib/player";
 import { useMeData } from "@/lib/me-query";
 
 export function MyAccountPage() {
@@ -16,7 +17,28 @@ export function MyAccountPage() {
     document.title = "マイページ — BLOCK-JANKEN";
   }, []);
 
-  const { profile, matches, isApiError } = useMeData(ME.name);
+  const { profile, matches, isPending, isError } = useMeData();
+
+  if (isPending) {
+    return (
+      <main className="max-w-7xl mx-auto p-6">
+        <p className="font-mono text-sm text-white/50">プロフィールを読み込み中…</p>
+      </main>
+    );
+  }
+
+  if (isError || !profile) {
+    return (
+      <main className="max-w-7xl mx-auto p-6 space-y-4">
+        <h1 className="text-2xl font-black">マイページ</h1>
+        <p className="text-sm text-destructive">
+          プロフィールを取得できませんでした。APIとDBを確認してください（プレイヤー名: {PLAYER_NAME}
+          ）。
+        </p>
+      </main>
+    );
+  }
+
   const playerName = profile.name;
 
   const wins = matches.filter((m) => m.winner === playerName).length;
@@ -37,11 +59,6 @@ export function MyAccountPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-6">
-      {isApiError ? (
-        <p className="text-[10px] font-mono text-white/50 uppercase">
-          API未接続 — モックデータを表示しています
-        </p>
-      ) : null}
       <header className="glass-panel rounded-2xl p-6 flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px]">

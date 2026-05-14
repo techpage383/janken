@@ -21,7 +21,8 @@ export function createApp(): express.Application {
           callback(null, origin);
           return;
         }
-        callback(new Error("Not allowed by CORS"));
+        // Reject without throwing — avoids flooding the terminal on every browser request.
+        callback(null, false);
       },
       credentials: true,
     }),
