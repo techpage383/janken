@@ -46,9 +46,11 @@ function RoomPage() {
   const [oppHand, setOppHand] = useState<Hand | null>(null);
   const [resolving, setResolving] = useState(false);
   const [viewers, setViewers] = useState(42);
-  // ラウンドフェーズ: 観戦者にもリアルタイム同期される共有状態
-  type Phase = "idle" | "selecting" | "reveal";
+  // ラウンドフェーズ: idle → selecting (手選択) → judging (判定) → reveal (結果)
+  type Phase = "idle" | "selecting" | "judging" | "reveal";
   const [phase, setPhase] = useState<Phase>("idle");
+  const SELECT_SECONDS = 5;
+  const [countdown, setCountdown] = useState<number>(SELECT_SECONDS);
   const [round, setRound] = useState(1);
   const [log, setLog] = useState<{ round: number; a: Hand; b: Hand; winner: "a" | "b" | "draw" }[]>([]);
   const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,25 +71,40 @@ function RoomPage() {
     let cancelled = false;
     function runRound() {
       if (cancelled) return;
+      // 1) 手選択フェーズ + カウントダウン
       setPhase("selecting");
       setMyHand(null);
       setOppHand(null);
+      setCountdown(SELECT_SECONDS);
+      let n = SELECT_SECONDS;
+      const cdId = setInterval(() => {
+        n -= 1;
+        setCountdown(Math.max(0, n));
+        if (n <= 0) clearInterval(cdId);
+      }, 1000);
       tickRef.current = setTimeout(() => {
+        clearInterval(cdId);
         if (cancelled) return;
+        // 2) 判定フェーズ (両者ロック → 演出)
         const a = HANDS[Math.floor(Math.random() * 3)];
         const b = HANDS[Math.floor(Math.random() * 3)];
-        setMyHand(a);
-        setOppHand(b);
-        setPhase("reveal");
-        const w = determineWinner(a, b);
-        setLog((l) => [{ round: roundRef.current, a, b, winner: w }, ...l].slice(0, 8));
+        setPhase("judging");
         tickRef.current = setTimeout(() => {
           if (cancelled) return;
-          roundRef.current += 1;
-          setRound(roundRef.current);
-          runRound();
-        }, 3500);
-      }, 1800);
+          // 3) リザルト反映
+          setMyHand(a);
+          setOppHand(b);
+          setPhase("reveal");
+          const w = determineWinner(a, b);
+          setLog((l) => [{ round: roundRef.current, a, b, winner: w }, ...l].slice(0, 8));
+          tickRef.current = setTimeout(() => {
+            if (cancelled) return;
+            roundRef.current += 1;
+            setRound(roundRef.current);
+            runRound();
+          }, 3000);
+        }, 1100);
+      }, SELECT_SECONDS * 1000);
     }
     const startDelay = setTimeout(runRound, 600);
     return () => {
@@ -112,10 +129,12 @@ function RoomPage() {
 
   function play(h: Hand) {
     if (mode !== "player" || !joined) return;
+    if (phase === "judging" || phase === "reveal") return;
     setMyHand(h);
     setOppHand(null);
     setResolving(true);
-    setPhase("selecting");
+    // 1) 選択ロック → 2) 判定演出 → 3) 結果
+    setPhase("judging");
     setTimeout(() => {
       const opp = HANDS[Math.floor(Math.random() * 3)];
       setOppHand(opp);
@@ -123,8 +142,13 @@ function RoomPage() {
       setPhase("reveal");
       const w = determineWinner(h, opp);
       setLog((l) => [{ round: roundRef.current, a: h, b: opp, winner: w }, ...l].slice(0, 8));
-      setRound((r) => r + 1);
-    }, 1200);
+      setTimeout(() => {
+        setRound((r) => r + 1);
+        setMyHand(null);
+        setOppHand(null);
+        setPhase("idle");
+      }, 2500);
+    }, 1100);
   }
 
   function switchTo(next: Mode) {
@@ -133,6 +157,7 @@ function RoomPage() {
     setMyHand(null);
     setOppHand(null);
     setPhase("idle");
+    setCountdown(SELECT_SECONDS);
     if (next === "spectator") {
       setJoined(false);
       setViewers((v) => v + 1);
