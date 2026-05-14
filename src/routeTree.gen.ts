@@ -42,9 +42,9 @@ const RoomsIndexRoute = RoomsIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoomsRoomIdRoute = RoomsRoomIdRouteImport.update({
-  id: '/$roomId',
-  path: '/$roomId',
-  getParentRoute: () => RoomsRoute,
+  id: '/rooms/$roomId',
+  path: '/rooms/$roomId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -98,6 +98,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   MypageRoute: typeof MypageRoute
   WatchRoute: typeof WatchRoute
+  RoomsRoomIdRoute: typeof RoomsRoomIdRoute
   RoomsIndexRoute: typeof RoomsIndexRoute
 }
 
@@ -140,10 +141,10 @@ declare module '@tanstack/react-router' {
     }
     '/rooms/$roomId': {
       id: '/rooms/$roomId'
-      path: '/$roomId'
+      path: '/rooms/$roomId'
       fullPath: '/rooms/$roomId'
       preLoaderRoute: typeof RoomsRoomIdRouteImport
-      parentRoute: typeof RoomsRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -153,6 +154,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   MypageRoute: MypageRoute,
   WatchRoute: WatchRoute,
+  RoomsRoomIdRoute: RoomsRoomIdRoute,
   RoomsIndexRoute: RoomsIndexRoute,
 }
 export const routeTree = rootRouteImport
