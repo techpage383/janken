@@ -255,26 +255,30 @@ function RoomPage() {
         </div>
 
         <section className="glass-panel rounded-2xl p-8">
+          {/* === ラウンド進行ステッパー === */}
+          <PhaseStepper phase={phase} round={round} countdown={countdown} selectSeconds={SELECT_SECONDS} />
+
           <div className="grid grid-cols-3 items-center gap-4 mb-8">
             <PlayerSlot
               name={mode === "spectator" ? ME.name : "YOU"}
               hand={myHand}
               highlight={result === "win"}
-              loading={mode === "spectator" && phase === "selecting"}
+              phase={phase}
+              locked={mode === "player" && joined && phase !== "idle" && myHand !== null}
             />
             <div className="text-center">
               <div className="font-accent text-5xl text-primary">VS</div>
               <div className="text-[10px] font-mono text-white/40 mt-1 tracking-widest">
                 ROUND {round}
               </div>
-              {phase === "selecting" && !result && (
-                <div className="mt-3 text-xs text-white/50 animate-pulse font-mono tracking-widest">
-                  SELECTING...
+              {phase === "judging" && (
+                <div className="mt-3 font-accent text-2xl text-warning animate-pulse tracking-widest">
+                  JUDGING...
                 </div>
               )}
               {result && phase === "reveal" && (
                 <div className={
-                  "mt-3 font-black text-xl " +
+                  "mt-3 font-black text-2xl animate-result-pop " +
                   (result === "win" ? "text-success" : result === "lose" ? "text-destructive" : "text-white/60")
                 }>
                   {mode === "spectator"
@@ -287,7 +291,8 @@ function RoomPage() {
               name={room.host}
               hand={oppHand}
               highlight={result === "lose"}
-              loading={resolving || (mode === "spectator" && phase === "selecting")}
+              phase={phase}
+              locked={phase !== "idle" && oppHand !== null}
             />
           </div>
 
@@ -295,19 +300,23 @@ function RoomPage() {
             {mode === "player" && joined ? (
               <>
                 <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3 text-center">
-                  YOUR HAND を選択
+                  {phase === "judging"
+                    ? "両者の手をロック中..."
+                    : phase === "reveal"
+                      ? "次のラウンド準備中"
+                      : `YOUR HAND を選択 — 残り ${countdown}s`}
                 </p>
                 <div className="grid grid-cols-3 gap-3">
                   {HANDS.map((h) => (
                     <button
                       key={h}
                       onClick={() => play(h)}
-                      disabled={resolving}
+                      disabled={resolving || phase === "judging" || phase === "reveal"}
                       className={
                         "py-6 rounded-xl border-2 transition-all flex flex-col items-center gap-2 " +
                         (myHand === h
                           ? "bg-primary/20 border-primary"
-                          : "border-border bg-white/5 hover:border-primary/50 hover:scale-[1.02]")
+                          : "border-border bg-white/5 hover:border-primary/50 hover:scale-[1.02] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100")
                       }
                     >
                       <span className="text-5xl">{HAND_EMOJI[h]}</span>
