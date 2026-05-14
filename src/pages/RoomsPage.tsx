@@ -111,7 +111,6 @@ function CreateRoomModal({
   onCreate: (r: Room) => void;
 }) {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
   const [stake, setStake] = useState<1 | 5 | 10>(1);
 
   return (
@@ -140,7 +139,7 @@ function CreateRoomModal({
             const id = `room-${Date.now()}`;
             const newRoom: Room = {
               id,
-              name: name || "新しいルーム",
+              name: "新しいルーム",
               host: "Player_404",
               maxPlayers: 2,
               stake,
@@ -153,17 +152,6 @@ function CreateRoomModal({
           }}
           className="space-y-5"
         >
-          <div>
-            <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">
-              ROOM NAME
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="例: 真剣勝負ルーム"
-              className="w-full bg-white/5 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
           <div>
             <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">
               STAKE
