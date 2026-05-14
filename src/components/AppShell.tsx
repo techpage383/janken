@@ -4,6 +4,7 @@ import { ME } from "@/lib/mock-data";
 const NAV = [
   { to: "/", label: "TOP" },
   { to: "/rooms", label: "LOBBY" },
+  { to: "/watch", label: "WATCH" },
   { to: "/history", label: "HISTORY" },
   { to: "/mypage", label: "MY PAGE" },
 ] as const;
