@@ -67,20 +67,25 @@ const ROOM_NAMES = [
   "雑談OKの部屋",
 ];
 
-// Seeded PRNG so SSR and client produce identical mock data (avoids hydration mismatch)
-let __seed = 1337;
-function srandom() {
-  __seed = (__seed * 9301 + 49297) % 233280;
-  return __seed / 233280;
+// Pure per-index hash so SSR & client produce identical mock data (no shared state).
+function hash(n: number, salt = 0): number {
+  let x = (n + 1) * 2654435761 + salt * 0x9e3779b1;
+  x = (x ^ (x >>> 16)) >>> 0;
+  x = Math.imul(x, 0x85ebca6b) >>> 0;
+  x = (x ^ (x >>> 13)) >>> 0;
+  x = Math.imul(x, 0xc2b2ae35) >>> 0;
+  x = (x ^ (x >>> 16)) >>> 0;
+  return x / 0xffffffff;
 }
-function rand<T>(arr: T[]): T {
-  return arr[Math.floor(srandom() * arr.length)];
+function pick<T>(arr: T[], n: number, salt = 0): T {
+  return arr[Math.floor(hash(n, salt) * arr.length)];
 }
 
+const FIXED_NOW = 1747200000000; // stable timestamp for SSR/client parity
 export const MOCK_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
-  const max = (rand([2, 2, 3]) as 2 | 3);
-  const stake = (rand([1, 1, 5, 5, 10]) as 1 | 5 | 10);
-  const playerCount = Math.min(max, Math.floor(srandom() * max) + 1);
+  const max = pick<2 | 3>([2, 2, 3], i, 1);
+  const stake = pick<1 | 5 | 10>([1, 1, 5, 5, 10], i, 2);
+  const playerCount = Math.min(max, Math.floor(hash(i, 3) * max) + 1);
   const status: RoomStatus = playerCount === max ? "playing" : "waiting";
   return {
     id: `room-${1000 + i}`,
@@ -88,31 +93,34 @@ export const MOCK_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
     host: HOSTS[i % HOSTS.length],
     maxPlayers: max,
     stake,
-    players: Array.from({ length: playerCount }, (_, j) => (j === 0 ? HOSTS[i % HOSTS.length] : rand(HOSTS))),
+    players: Array.from({ length: playerCount }, (_, j) =>
+      j === 0 ? HOSTS[i % HOSTS.length] : pick(HOSTS, i * 10 + j, 4),
+    ),
     status,
-    createdAt: Date.now() - i * 60_000,
+    createdAt: FIXED_NOW - i * 60_000,
   };
 });
 
 const HANDS: Hand[] = ["rock", "paper", "scissors"];
 
 export const MOCK_MATCHES: Match[] = Array.from({ length: 30 }, (_, i) => {
-  const winner = rand(HOSTS);
-  let loser = rand(HOSTS);
-  while (loser === winner) loser = rand(HOSTS);
-  const winnerHand = rand(HANDS);
-  const stake = rand([1, 5, 10]);
+  const winner = pick(HOSTS, i, 10);
+  let loser = pick(HOSTS, i, 11);
+  let salt = 12;
+  while (loser === winner) loser = pick(HOSTS, i, salt++);
+  const winnerHand = pick(HANDS, i, 20);
+  const stake = pick([1, 5, 10], i, 21);
   return {
     id: `m-${i}`,
     roomId: `room-${1000 + (i % 8)}`,
-    roomName: rand(ROOM_NAMES),
+    roomName: pick(ROOM_NAMES, i, 22),
     stake,
     winner,
     loser,
     winnerHand,
     loserHand: beats(winnerHand),
     payout: stake * 1.9,
-    finishedAt: Date.now() - i * 90_000,
+    finishedAt: FIXED_NOW - i * 90_000,
   };
 });
 
@@ -124,21 +132,21 @@ function beats(w: Hand): Hand {
 
 // My matches for mypage
 export const MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
-  const won = srandom() > 0.36;
-  const opp = rand(HOSTS);
-  const stake = rand([1, 5, 10]);
-  const myHand = rand(HANDS);
+  const won = hash(i, 30) > 0.36;
+  const opp = pick(HOSTS, i, 31);
+  const stake = pick([1, 5, 10], i, 32);
+  const myHand = pick(HANDS, i, 33);
   return {
     id: `my-${i}`,
     roomId: `room-${1000 + (i % 8)}`,
-    roomName: rand(ROOM_NAMES),
+    roomName: pick(ROOM_NAMES, i, 34),
     stake,
     winner: won ? ME.name : opp,
     loser: won ? opp : ME.name,
     winnerHand: myHand,
     loserHand: beats(myHand),
     payout: stake * 1.9,
-    finishedAt: Date.now() - i * 3600_000,
+    finishedAt: FIXED_NOW - i * 3600_000,
   };
 });
 
