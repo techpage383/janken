@@ -46,9 +46,11 @@ function RoomPage() {
   const [oppHand, setOppHand] = useState<Hand | null>(null);
   const [resolving, setResolving] = useState(false);
   const [viewers, setViewers] = useState(42);
-  // ラウンドフェーズ: 観戦者にもリアルタイム同期される共有状態
-  type Phase = "idle" | "selecting" | "reveal";
+  // ラウンドフェーズ: idle → selecting (手選択) → judging (判定) → reveal (結果)
+  type Phase = "idle" | "selecting" | "judging" | "reveal";
   const [phase, setPhase] = useState<Phase>("idle");
+  const SELECT_SECONDS = 5;
+  const [countdown, setCountdown] = useState<number>(SELECT_SECONDS);
   const [round, setRound] = useState(1);
   const [log, setLog] = useState<{ round: number; a: Hand; b: Hand; winner: "a" | "b" | "draw" }[]>([]);
   const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,25 +71,40 @@ function RoomPage() {
     let cancelled = false;
     function runRound() {
       if (cancelled) return;
+      // 1) 手選択フェーズ + カウントダウン
       setPhase("selecting");
       setMyHand(null);
       setOppHand(null);
+      setCountdown(SELECT_SECONDS);
+      let n = SELECT_SECONDS;
+      const cdId = setInterval(() => {
+        n -= 1;
+        setCountdown(Math.max(0, n));
+        if (n <= 0) clearInterval(cdId);
+      }, 1000);
       tickRef.current = setTimeout(() => {
+        clearInterval(cdId);
         if (cancelled) return;
+        // 2) 判定フェーズ (両者ロック → 演出)
         const a = HANDS[Math.floor(Math.random() * 3)];
         const b = HANDS[Math.floor(Math.random() * 3)];
-        setMyHand(a);
-        setOppHand(b);
-        setPhase("reveal");
-        const w = determineWinner(a, b);
-        setLog((l) => [{ round: roundRef.current, a, b, winner: w }, ...l].slice(0, 8));
+        setPhase("judging");
         tickRef.current = setTimeout(() => {
           if (cancelled) return;
-          roundRef.current += 1;
-          setRound(roundRef.current);
-          runRound();
-        }, 3500);
-      }, 1800);
+          // 3) リザルト反映
+          setMyHand(a);
+          setOppHand(b);
+          setPhase("reveal");
+          const w = determineWinner(a, b);
+          setLog((l) => [{ round: roundRef.current, a, b, winner: w }, ...l].slice(0, 8));
+          tickRef.current = setTimeout(() => {
+            if (cancelled) return;
+            roundRef.current += 1;
+            setRound(roundRef.current);
+            runRound();
+          }, 3000);
+        }, 1100);
+      }, SELECT_SECONDS * 1000);
     }
     const startDelay = setTimeout(runRound, 600);
     return () => {
@@ -112,10 +129,12 @@ function RoomPage() {
 
   function play(h: Hand) {
     if (mode !== "player" || !joined) return;
+    if (phase === "judging" || phase === "reveal") return;
     setMyHand(h);
     setOppHand(null);
     setResolving(true);
-    setPhase("selecting");
+    // 1) 選択ロック → 2) 判定演出 → 3) 結果
+    setPhase("judging");
     setTimeout(() => {
       const opp = HANDS[Math.floor(Math.random() * 3)];
       setOppHand(opp);
@@ -123,8 +142,13 @@ function RoomPage() {
       setPhase("reveal");
       const w = determineWinner(h, opp);
       setLog((l) => [{ round: roundRef.current, a: h, b: opp, winner: w }, ...l].slice(0, 8));
-      setRound((r) => r + 1);
-    }, 1200);
+      setTimeout(() => {
+        setRound((r) => r + 1);
+        setMyHand(null);
+        setOppHand(null);
+        setPhase("idle");
+      }, 2500);
+    }, 1100);
   }
 
   function switchTo(next: Mode) {
@@ -133,6 +157,7 @@ function RoomPage() {
     setMyHand(null);
     setOppHand(null);
     setPhase("idle");
+    setCountdown(SELECT_SECONDS);
     if (next === "spectator") {
       setJoined(false);
       setViewers((v) => v + 1);
@@ -230,26 +255,30 @@ function RoomPage() {
         </div>
 
         <section className="glass-panel rounded-2xl p-8">
+          {/* === ラウンド進行ステッパー === */}
+          <PhaseStepper phase={phase} round={round} countdown={countdown} selectSeconds={SELECT_SECONDS} />
+
           <div className="grid grid-cols-3 items-center gap-4 mb-8">
             <PlayerSlot
               name={mode === "spectator" ? ME.name : "YOU"}
               hand={myHand}
               highlight={result === "win"}
-              loading={mode === "spectator" && phase === "selecting"}
+              phase={phase}
+              locked={mode === "player" && joined && phase !== "idle" && myHand !== null}
             />
             <div className="text-center">
               <div className="font-accent text-5xl text-primary">VS</div>
               <div className="text-[10px] font-mono text-white/40 mt-1 tracking-widest">
                 ROUND {round}
               </div>
-              {phase === "selecting" && !result && (
-                <div className="mt-3 text-xs text-white/50 animate-pulse font-mono tracking-widest">
-                  SELECTING...
+              {phase === "judging" && (
+                <div className="mt-3 font-accent text-2xl text-warning animate-pulse tracking-widest">
+                  JUDGING...
                 </div>
               )}
               {result && phase === "reveal" && (
                 <div className={
-                  "mt-3 font-black text-xl " +
+                  "mt-3 font-black text-2xl animate-result-pop " +
                   (result === "win" ? "text-success" : result === "lose" ? "text-destructive" : "text-white/60")
                 }>
                   {mode === "spectator"
@@ -262,7 +291,8 @@ function RoomPage() {
               name={room.host}
               hand={oppHand}
               highlight={result === "lose"}
-              loading={resolving || (mode === "spectator" && phase === "selecting")}
+              phase={phase}
+              locked={phase !== "idle" && oppHand !== null}
             />
           </div>
 
@@ -270,19 +300,23 @@ function RoomPage() {
             {mode === "player" && joined ? (
               <>
                 <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3 text-center">
-                  YOUR HAND を選択
+                  {phase === "judging"
+                    ? "両者の手をロック中..."
+                    : phase === "reveal"
+                      ? "次のラウンド準備中"
+                      : `YOUR HAND を選択 — 残り ${countdown}s`}
                 </p>
                 <div className="grid grid-cols-3 gap-3">
                   {HANDS.map((h) => (
                     <button
                       key={h}
                       onClick={() => play(h)}
-                      disabled={resolving}
+                      disabled={resolving || phase === "judging" || phase === "reveal"}
                       className={
                         "py-6 rounded-xl border-2 transition-all flex flex-col items-center gap-2 " +
                         (myHand === h
                           ? "bg-primary/20 border-primary"
-                          : "border-border bg-white/5 hover:border-primary/50 hover:scale-[1.02]")
+                          : "border-border bg-white/5 hover:border-primary/50 hover:scale-[1.02] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100")
                       }
                     >
                       <span className="text-5xl">{HAND_EMOJI[h]}</span>
@@ -418,17 +452,131 @@ function RoomPage() {
   );
 }
 
-function PlayerSlot({ name, hand, highlight, loading }: { name: string; hand: Hand | null; highlight?: boolean; loading?: boolean }) {
+type SlotPhase = "idle" | "selecting" | "judging" | "reveal";
+
+function PlayerSlot({
+  name,
+  hand,
+  highlight,
+  phase,
+  locked,
+}: {
+  name: string;
+  hand: Hand | null;
+  highlight?: boolean;
+  phase: SlotPhase;
+  locked?: boolean;
+}) {
+  const showHand = phase === "reveal" && !!hand;
+  const isShaking = phase === "selecting" || phase === "judging";
   return (
-    <div className={
-      "p-6 rounded-2xl border-2 text-center transition-all " +
-      (highlight ? "border-primary bg-primary/10" : "border-border bg-white/5")
-    }>
-      <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3">{name}</p>
-      <div className="text-7xl h-24 flex items-center justify-center">
-        {loading ? <span className="animate-pulse">⌛</span> : hand ? HAND_EMOJI[hand] : <span className="text-white/10">?</span>}
+    <div
+      className={
+        "p-6 rounded-2xl border-2 text-center transition-all " +
+        (highlight
+          ? "border-primary bg-primary/10 shadow-[0_0_30px_-8px_var(--color-primary)]"
+          : "border-border bg-white/5")
+      }
+    >
+      <div className="flex items-center justify-center gap-1.5 mb-3">
+        <span className="text-[10px] font-mono text-white/40 tracking-widest">{name}</span>
+        {locked && (
+          <span className="text-[9px] font-mono text-success tracking-widest">🔒 LOCKED</span>
+        )}
       </div>
-      <p className="text-sm font-black mt-2 h-5">{hand ? HAND_JP[hand] : ""}</p>
+      <div className="text-7xl h-24 flex items-center justify-center">
+        {showHand ? (
+          <span key={hand} className="animate-hand-pop inline-block">{HAND_EMOJI[hand!]}</span>
+        ) : isShaking ? (
+          <span className="animate-hand-shake">✊</span>
+        ) : (
+          <span className="text-white/10">?</span>
+        )}
+      </div>
+      <p className="text-sm font-black mt-2 h-5">{showHand ? HAND_JP[hand!] : ""}</p>
+    </div>
+  );
+}
+
+function PhaseStepper({
+  phase,
+  round,
+  countdown,
+  selectSeconds,
+}: {
+  phase: SlotPhase;
+  round: number;
+  countdown: number;
+  selectSeconds: number;
+}) {
+  const steps = [
+    { key: "selecting", label: "手選択", icon: "✊" },
+    { key: "judging", label: "判定", icon: "⚖" },
+    { key: "reveal", label: "結果", icon: "🏆" },
+  ] as const;
+  const order: SlotPhase[] = ["idle", "selecting", "judging", "reveal"];
+  const idx = order.indexOf(phase);
+  const pct = Math.max(0, Math.min(1, (selectSeconds - countdown) / selectSeconds));
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <span className="font-mono text-[10px] text-white/40 tracking-widest uppercase">
+          ROUND {round} / 進行
+        </span>
+        {phase === "selecting" && (
+          <span className="font-accent text-3xl text-primary leading-none tabular-nums">
+            {countdown}
+            <span className="text-xs text-white/40 ml-1">s</span>
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {steps.map((s, i) => {
+          const stepIdx = i + 1; // selecting=1, judging=2, reveal=3
+          const active = idx === stepIdx;
+          const done = idx > stepIdx;
+          return (
+            <div key={s.key} className="flex-1 flex items-center gap-2">
+              <div
+                className={
+                  "size-8 rounded-full grid place-items-center text-sm font-black transition-colors shrink-0 " +
+                  (done
+                    ? "bg-success text-success-foreground"
+                    : active
+                      ? "bg-primary text-primary-foreground animate-step-glow"
+                      : "bg-white/5 text-white/30 border border-border")
+                }
+              >
+                {done ? "✓" : s.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-black tracking-widest uppercase truncate">
+                  <span className={done || active ? "text-white" : "text-white/30"}>{s.label}</span>
+                </div>
+                <div className="h-1 mt-1 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className={
+                      "h-full transition-all duration-300 " +
+                      (done
+                        ? "bg-success w-full"
+                        : active
+                          ? s.key === "selecting"
+                            ? "bg-primary"
+                            : "bg-primary animate-pulse w-full"
+                          : "w-0")
+                    }
+                    style={
+                      active && s.key === "selecting"
+                        ? { width: `${pct * 100}%` }
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
