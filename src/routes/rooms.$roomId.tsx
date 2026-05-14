@@ -452,17 +452,131 @@ function RoomPage() {
   );
 }
 
-function PlayerSlot({ name, hand, highlight, loading }: { name: string; hand: Hand | null; highlight?: boolean; loading?: boolean }) {
+type SlotPhase = "idle" | "selecting" | "judging" | "reveal";
+
+function PlayerSlot({
+  name,
+  hand,
+  highlight,
+  phase,
+  locked,
+}: {
+  name: string;
+  hand: Hand | null;
+  highlight?: boolean;
+  phase: SlotPhase;
+  locked?: boolean;
+}) {
+  const showHand = phase === "reveal" && !!hand;
+  const isShaking = phase === "selecting" || phase === "judging";
   return (
-    <div className={
-      "p-6 rounded-2xl border-2 text-center transition-all " +
-      (highlight ? "border-primary bg-primary/10" : "border-border bg-white/5")
-    }>
-      <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3">{name}</p>
-      <div className="text-7xl h-24 flex items-center justify-center">
-        {loading ? <span className="animate-pulse">⌛</span> : hand ? HAND_EMOJI[hand] : <span className="text-white/10">?</span>}
+    <div
+      className={
+        "p-6 rounded-2xl border-2 text-center transition-all " +
+        (highlight
+          ? "border-primary bg-primary/10 shadow-[0_0_30px_-8px_var(--color-primary)]"
+          : "border-border bg-white/5")
+      }
+    >
+      <div className="flex items-center justify-center gap-1.5 mb-3">
+        <span className="text-[10px] font-mono text-white/40 tracking-widest">{name}</span>
+        {locked && (
+          <span className="text-[9px] font-mono text-success tracking-widest">🔒 LOCKED</span>
+        )}
       </div>
-      <p className="text-sm font-black mt-2 h-5">{hand ? HAND_JP[hand] : ""}</p>
+      <div className="text-7xl h-24 flex items-center justify-center">
+        {showHand ? (
+          <span key={hand} className="animate-hand-pop inline-block">{HAND_EMOJI[hand!]}</span>
+        ) : isShaking ? (
+          <span className="animate-hand-shake">✊</span>
+        ) : (
+          <span className="text-white/10">?</span>
+        )}
+      </div>
+      <p className="text-sm font-black mt-2 h-5">{showHand ? HAND_JP[hand!] : ""}</p>
+    </div>
+  );
+}
+
+function PhaseStepper({
+  phase,
+  round,
+  countdown,
+  selectSeconds,
+}: {
+  phase: SlotPhase;
+  round: number;
+  countdown: number;
+  selectSeconds: number;
+}) {
+  const steps = [
+    { key: "selecting", label: "手選択", icon: "✊" },
+    { key: "judging", label: "判定", icon: "⚖" },
+    { key: "reveal", label: "結果", icon: "🏆" },
+  ] as const;
+  const order: SlotPhase[] = ["idle", "selecting", "judging", "reveal"];
+  const idx = order.indexOf(phase);
+  const pct = Math.max(0, Math.min(1, (selectSeconds - countdown) / selectSeconds));
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <span className="font-mono text-[10px] text-white/40 tracking-widest uppercase">
+          ROUND {round} / 進行
+        </span>
+        {phase === "selecting" && (
+          <span className="font-accent text-3xl text-primary leading-none tabular-nums">
+            {countdown}
+            <span className="text-xs text-white/40 ml-1">s</span>
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {steps.map((s, i) => {
+          const stepIdx = i + 1; // selecting=1, judging=2, reveal=3
+          const active = idx === stepIdx;
+          const done = idx > stepIdx;
+          return (
+            <div key={s.key} className="flex-1 flex items-center gap-2">
+              <div
+                className={
+                  "size-8 rounded-full grid place-items-center text-sm font-black transition-colors shrink-0 " +
+                  (done
+                    ? "bg-success text-success-foreground"
+                    : active
+                      ? "bg-primary text-primary-foreground animate-step-glow"
+                      : "bg-white/5 text-white/30 border border-border")
+                }
+              >
+                {done ? "✓" : s.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-black tracking-widest uppercase truncate">
+                  <span className={done || active ? "text-white" : "text-white/30"}>{s.label}</span>
+                </div>
+                <div className="h-1 mt-1 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className={
+                      "h-full transition-all duration-300 " +
+                      (done
+                        ? "bg-success w-full"
+                        : active
+                          ? s.key === "selecting"
+                            ? "bg-primary"
+                            : "bg-primary animate-pulse w-full"
+                          : "w-0")
+                    }
+                    style={
+                      active && s.key === "selecting"
+                        ? { width: `${pct * 100}%` }
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
