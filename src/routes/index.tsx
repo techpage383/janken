@@ -1,26 +1,160 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { MOCK_ROOMS, MOCK_MATCHES, HAND_EMOJI } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム" },
+      { name: "description", content: "ブロックチェーンで遊ぶ究極のじゃんけん。世界中のプレイヤーと対戦・観戦できる分散型ゲームロビー。" },
+    ],
+  }),
+  component: TopPage,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function TopPage() {
+  const featured = MOCK_ROOMS.slice(0, 4);
+  const recent = MOCK_MATCHES.slice(0, 6);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
+      <div className="col-span-12 lg:col-span-8 space-y-6">
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 border border-border p-8">
+          <div className="relative z-10 space-y-4 max-w-2xl">
+            <div className="inline-block px-2 py-1 bg-black text-primary font-mono text-[10px] font-bold tracking-widest uppercase">
+              Season 04 Active
+            </div>
+            <h1 className="text-5xl md:text-6xl font-black leading-tight text-balance">
+              世界中のプレイヤーと<br />
+              <span className="text-primary">ガチじゃんけん。</span>
+            </h1>
+            <p className="text-white/60 text-base max-w-md">
+              ブロックチェーン技術を活用した、透明でエキサイティングな対戦プラットフォーム。
+              数秒でルーム作成、即座に勝敗を確定。
+            </p>
+            <div className="flex flex-wrap gap-3 pt-4">
+              <Link
+                to="/rooms"
+                className="px-8 py-4 bg-primary text-primary-foreground font-black text-lg hover:scale-[1.02] transition-transform"
+              >
+                ルームを作る
+              </Link>
+              <Link
+                to="/rooms"
+                className="px-8 py-4 border-2 border-white/20 font-black text-lg hover:bg-white/5 transition-colors"
+              >
+                クイック参加
+              </Link>
+            </div>
+          </div>
+          <div className="absolute right-[-5%] top-1/2 -translate-y-1/2 opacity-10 pointer-events-none select-none">
+            <span className="font-accent text-[200px] md:text-[280px] leading-none">RPS</span>
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-black flex items-center gap-2">
+              <span className="size-3 bg-secondary rounded-full" />
+              注目のルーム <span className="text-white/40 font-mono text-sm ml-2">[FEATURED]</span>
+            </h2>
+            <Link to="/rooms" className="text-xs font-bold tracking-widest text-white/60 hover:text-primary uppercase">
+              See all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {featured.map((r) => <RoomCard key={r.id} room={r} />)}
+          </div>
+        </section>
+      </div>
+
+      <aside className="col-span-12 lg:col-span-4 space-y-6">
+        <div className="glass-panel rounded-2xl overflow-hidden">
+          <div className="p-4 border-b border-border bg-white/5 flex items-center justify-between">
+            <h3 className="text-sm font-black tracking-tighter flex items-center gap-2">
+              <span className="size-2 bg-destructive rounded-full animate-ping" />
+              リアルタイム履歴
+            </h3>
+            <span className="text-[10px] font-mono text-white/40 uppercase">LIVE FEED</span>
+          </div>
+          <div className="divide-y divide-white/5">
+            {recent.map((m) => (
+              <div key={m.id} className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg">{HAND_EMOJI[m.winnerHand]}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate">{m.winner}</p>
+                    <p className="text-[10px] text-white/40 truncate">が {m.loser} に勝利</p>
+                  </div>
+                </div>
+                <span className="font-accent text-lg text-success shrink-0">+${m.payout.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+          <Link to="/history" className="block w-full py-3 text-center text-[10px] font-bold tracking-widest text-white/60 uppercase hover:bg-white/5 border-t border-border">
+            すべての履歴を見る →
+          </Link>
+        </div>
+
+        <div className="glass-panel rounded-2xl p-6 space-y-3">
+          <h3 className="text-sm font-black tracking-tighter">遊び方</h3>
+          <ol className="space-y-2 text-sm text-white/70">
+            <li><span className="text-primary font-mono mr-2">01</span>ルームを作るか参加する</li>
+            <li><span className="text-primary font-mono mr-2">02</span>賞金額を選択（$1/$5/$10）</li>
+            <li><span className="text-primary font-mono mr-2">03</span>グー・チョキ・パーで勝負！</li>
+            <li><span className="text-primary font-mono mr-2">04</span>勝者が賞金を獲得</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
   );
 }
 
-function Index() {
-  return <PlaceholderIndex />;
+import type { Room } from "@/lib/mock-data";
+
+export function RoomCard({ room }: { room: Room }) {
+  const isFull = room.players.length >= room.maxPlayers;
+  return (
+    <Link
+      to="/rooms/$roomId"
+      params={{ roomId: room.id }}
+      className="glass-panel p-5 rounded-xl hover:border-primary/50 transition-colors block group"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className="min-w-0">
+          <span className="text-[10px] font-mono text-white/40 block mb-1 uppercase tracking-widest">
+            Host: {room.host}
+          </span>
+          <h4 className="text-lg font-bold truncate">{room.name}</h4>
+        </div>
+        <div className="font-accent text-3xl text-primary shrink-0 ml-3">${room.stake}</div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            {Array.from({ length: room.maxPlayers }).map((_, i) => (
+              <div
+                key={i}
+                className={
+                  i < room.players.length
+                    ? "size-8 rounded-full bg-zinc-700 border-2 border-background flex items-center justify-center text-[10px] font-bold"
+                    : "size-8 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center text-[10px] text-white/20"
+                }
+              >
+                {i < room.players.length ? room.players[i][0].toUpperCase() : "+"}
+              </div>
+            ))}
+          </div>
+          <span className="text-sm font-bold text-white/60">
+            {room.players.length}/{room.maxPlayers}
+            <span className="text-[10px] text-white/20 ml-1">PLAYERS</span>
+          </span>
+        </div>
+        {isFull ? (
+          <span className="px-3 py-1 bg-white/5 text-white/40 text-[10px] font-black tracking-tighter rounded">対戦中</span>
+        ) : (
+          <span className="px-3 py-1 bg-success/20 text-success text-[10px] font-black tracking-tighter rounded">募集中</span>
+        )}
+      </div>
+    </Link>
+  );
 }
