@@ -1,32 +1,47 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { MOCK_ROOMS, HAND_EMOJI, HAND_JP, ME, type Hand, determineWinner } from "@/lib/mock-data";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  MOCK_ROOMS,
+  HAND_EMOJI,
+  HAND_JP,
+  ME,
+  type Hand,
+  type Room,
+  determineWinner,
+} from "@/lib/mock-data";
 
-export const Route = createFileRoute("/rooms/$roomId")({
-  head: () => ({
-    meta: [
-      { title: "対戦ルーム — BLOCK-JANKEN" },
-      { name: "description", content: "じゃんけんルームで対戦・観戦する。" },
-    ],
-  }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    mode: s.mode === "spectator" ? ("spectator" as const) : ("player" as const),
-  }),
-  component: RoomPage,
-  notFoundComponent: () => (
+function RoomNotFound() {
+  return (
     <div className="max-w-xl mx-auto p-12 text-center">
       <h1 className="text-3xl font-black mb-4">ルームが見つかりません</h1>
-      <Link to="/rooms" className="text-primary underline">ロビーへ戻る</Link>
+      <Link to="/rooms" className="text-primary underline">
+        ロビーへ戻る
+      </Link>
     </div>
-  ),
-});
+  );
+}
 
-function RoomPage() {
-  const { roomId } = Route.useParams();
-  const { mode: searchMode } = Route.useSearch();
-  const room = MOCK_ROOMS.find((r) => r.id === roomId);
-  if (!room) throw notFound();
+export function RoomDetailPage() {
+  const { roomId } = useParams();
+  const [searchParams] = useSearchParams();
+  const searchMode = searchParams.get("mode") === "spectator" ? "spectator" : "player";
 
+  useLayoutEffect(() => {
+    document.title = "対戦ルーム — BLOCK-JANKEN";
+  }, []);
+
+  const room = roomId ? MOCK_ROOMS.find((r) => r.id === roomId) : undefined;
+  if (!room) return <RoomNotFound />;
+  return <RoomDetailContent room={room} searchMode={searchMode} />;
+}
+
+function RoomDetailContent({
+  room,
+  searchMode,
+}: {
+  room: Room;
+  searchMode: "player" | "spectator";
+}) {
   type Mode = "player" | "spectator";
   const isHost = room.host === ME.name;
   const seatsLeft = room.maxPlayers - room.players.length;
@@ -52,7 +67,9 @@ function RoomPage() {
   const SELECT_SECONDS = 5;
   const [countdown, setCountdown] = useState<number>(SELECT_SECONDS);
   const [round, setRound] = useState(1);
-  const [log, setLog] = useState<{ round: number; a: Hand; b: Hand; winner: "a" | "b" | "draw" }[]>([]);
+  const [log, setLog] = useState<{ round: number; a: Hand; b: Hand; winner: "a" | "b" | "draw" }[]>(
+    [],
+  );
   const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const HANDS: Hand[] = ["rock", "paper", "scissors"];
@@ -117,7 +134,9 @@ function RoomPage() {
 
   // round の最新値を effect 内で参照するための ref
   const roundRef = useRef(round);
-  useEffect(() => { roundRef.current = round; }, [round]);
+  useEffect(() => {
+    roundRef.current = round;
+  }, [round]);
 
   // 観戦中のビューワー数を微変動 (リアルタイム感)
   useEffect(() => {
@@ -192,7 +211,9 @@ function RoomPage() {
     <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
       <div className="col-span-12 lg:col-span-8 space-y-6">
         <div className="flex items-center gap-2 text-xs font-mono text-white/40">
-          <Link to="/rooms" className="hover:text-white">← LOBBY</Link>
+          <Link to="/rooms" className="hover:text-white">
+            ← LOBBY
+          </Link>
           <span>/</span>
           <span>{room.id.toUpperCase()}</span>
         </div>
@@ -204,16 +225,20 @@ function RoomPage() {
             </span>
             <h1 className="text-3xl font-black">{room.name}</h1>
             <div className="flex gap-3 mt-3">
-              <span className="px-2 py-1 bg-success/20 text-success text-[10px] font-black rounded">募集中</span>
+              <span className="px-2 py-1 bg-success/20 text-success text-[10px] font-black rounded">
+                募集中
+              </span>
               <span className="px-2 py-1 bg-white/5 text-white/60 text-[10px] font-black rounded">
                 {room.maxPlayers}人対戦
               </span>
-              <span className={
-                "px-2 py-1 text-[10px] font-black rounded " +
-                (mode === "player"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-secondary/20 text-secondary")
-              }>
+              <span
+                className={
+                  "px-2 py-1 text-[10px] font-black rounded " +
+                  (mode === "player"
+                    ? "bg-primary/20 text-primary"
+                    : "bg-secondary/20 text-secondary")
+                }
+              >
                 {mode === "player" ? (joined ? "参加中" : "参加準備") : "観戦中"}
               </span>
             </div>
@@ -256,7 +281,12 @@ function RoomPage() {
 
         <section className="glass-panel rounded-2xl p-8">
           {/* === ラウンド進行ステッパー === */}
-          <PhaseStepper phase={phase} round={round} countdown={countdown} selectSeconds={SELECT_SECONDS} />
+          <PhaseStepper
+            phase={phase}
+            round={round}
+            countdown={countdown}
+            selectSeconds={SELECT_SECONDS}
+          />
 
           <div className="grid grid-cols-3 items-center gap-4 mb-8">
             <PlayerSlot
@@ -277,13 +307,23 @@ function RoomPage() {
                 </div>
               )}
               {result && phase === "reveal" && (
-                <div className={
-                  "mt-3 font-black text-2xl animate-result-pop " +
-                  (result === "win" ? "text-success" : result === "lose" ? "text-destructive" : "text-white/60")
-                }>
+                <div
+                  className={
+                    "mt-3 font-black text-2xl animate-result-pop " +
+                    (result === "win"
+                      ? "text-success"
+                      : result === "lose"
+                        ? "text-destructive"
+                        : "text-white/60")
+                  }
+                >
                   {mode === "spectator"
                     ? spectatorResultLabel
-                    : result === "win" ? "勝利！" : result === "lose" ? "敗北..." : "あいこ"}
+                    : result === "win"
+                      ? "勝利！"
+                      : result === "lose"
+                        ? "敗北..."
+                        : "あいこ"}
                 </div>
               )}
             </div>
@@ -345,15 +385,22 @@ function RoomPage() {
                   観戦中は手を出せません。プレイヤーの手と結果がリアルタイムで同期表示されます。
                 </p>
                 <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-white/5 border border-border">
-                  <span className={
-                    "size-2 rounded-full " +
-                    (phase === "selecting" ? "bg-primary animate-pulse"
-                      : phase === "reveal" ? "bg-success" : "bg-white/30")
-                  } />
+                  <span
+                    className={
+                      "size-2 rounded-full " +
+                      (phase === "selecting"
+                        ? "bg-primary animate-pulse"
+                        : phase === "reveal"
+                          ? "bg-success"
+                          : "bg-white/30")
+                    }
+                  />
                   <span className="font-mono text-[10px] tracking-widest text-white/60 uppercase">
-                    {phase === "selecting" ? "プレイヤー選択中"
-                      : phase === "reveal" ? "結果発表"
-                      : "次ラウンド準備中"}
+                    {phase === "selecting"
+                      ? "プレイヤー選択中"
+                      : phase === "reveal"
+                        ? "結果発表"
+                        : "次ラウンド準備中"}
                   </span>
                 </div>
               </div>
@@ -381,11 +428,13 @@ function RoomPage() {
                   <span className="text-white/20 text-xs">vs</span>
                   <span className="text-2xl">{HAND_EMOJI[r.b]}</span>
                   <span className="ml-auto font-black text-[10px] tracking-widest">
-                    {r.winner === "draw"
-                      ? <span className="text-white/40">DRAW</span>
-                      : r.winner === "a"
-                        ? <span className="text-success">P1 WIN</span>
-                        : <span className="text-destructive">P2 WIN</span>}
+                    {r.winner === "draw" ? (
+                      <span className="text-white/40">DRAW</span>
+                    ) : r.winner === "a" ? (
+                      <span className="text-success">P1 WIN</span>
+                    ) : (
+                      <span className="text-destructive">P2 WIN</span>
+                    )}
                   </span>
                 </div>
               ))}
@@ -408,15 +457,19 @@ function RoomPage() {
                     (p ? "bg-white/5 border-border" : "border-dashed border-white/10")
                   }
                 >
-                  <div className={
-                    "size-8 rounded-full grid place-items-center text-xs font-bold " +
-                    (p ? "bg-zinc-700 text-white" : "bg-white/5 text-white/20")
-                  }>
+                  <div
+                    className={
+                      "size-8 rounded-full grid place-items-center text-xs font-bold " +
+                      (p ? "bg-zinc-700 text-white" : "bg-white/5 text-white/20")
+                    }
+                  >
                     {p ? p[0].toUpperCase() : "?"}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-bold">{p ?? "空席"}</p>
-                    <p className="text-[10px] font-mono text-white/40">{p === room.host ? "HOST" : p ? "PLAYER" : "WAITING..."}</p>
+                    <p className="text-[10px] font-mono text-white/40">
+                      {p === room.host ? "HOST" : p ? "PLAYER" : "WAITING..."}
+                    </p>
                   </div>
                 </div>
               );
@@ -486,7 +539,9 @@ function PlayerSlot({
       </div>
       <div className="text-7xl h-24 flex items-center justify-center">
         {showHand ? (
-          <span key={hand} className="animate-hand-pop inline-block">{HAND_EMOJI[hand!]}</span>
+          <span key={hand} className="animate-hand-pop inline-block">
+            {HAND_EMOJI[hand!]}
+          </span>
         ) : isShaking ? (
           <span className="animate-hand-shake">✊</span>
         ) : (
@@ -565,11 +620,7 @@ function PhaseStepper({
                             : "bg-primary animate-pulse w-full"
                           : "w-0")
                     }
-                    style={
-                      active && s.key === "selecting"
-                        ? { width: `${pct * 100}%` }
-                        : undefined
-                    }
+                    style={active && s.key === "selecting" ? { width: `${pct * 100}%` } : undefined}
                   />
                 </div>
               </div>

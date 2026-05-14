@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import type { Room } from "@/lib/mock-data";
 
 export function RoomCard({ room }: { room: Room }) {
@@ -36,16 +36,18 @@ export function RoomCard({ room }: { room: Room }) {
           </span>
         </div>
         {isFull ? (
-          <span className="px-3 py-1 bg-white/5 text-white/40 text-[10px] font-black tracking-tighter rounded">対戦中</span>
+          <span className="px-3 py-1 bg-white/5 text-white/40 text-[10px] font-black tracking-tighter rounded">
+            対戦中
+          </span>
         ) : (
-          <span className="px-3 py-1 bg-success/20 text-success text-[10px] font-black tracking-tighter rounded">募集中</span>
+          <span className="px-3 py-1 bg-success/20 text-success text-[10px] font-black tracking-tighter rounded">
+            募集中
+          </span>
         )}
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Link
-          to="/rooms/$roomId"
-          params={{ roomId: room.id }}
-          search={{ mode: "player" as const }}
+          to={`/rooms/${room.id}?mode=player`}
           className={
             "py-2 text-center text-[11px] font-black tracking-widest uppercase rounded-md transition-colors " +
             (isFull
@@ -56,9 +58,7 @@ export function RoomCard({ room }: { room: Room }) {
           🎮 参加する
         </Link>
         <Link
-          to="/rooms/$roomId"
-          params={{ roomId: room.id }}
-          search={{ mode: "spectator" as const }}
+          to={`/rooms/${room.id}?mode=spectator`}
           className="py-2 text-center text-[11px] font-black tracking-widest uppercase rounded-md bg-secondary/20 text-secondary border border-secondary/40 hover:bg-secondary/30 transition-colors"
         >
           👁 観戦する

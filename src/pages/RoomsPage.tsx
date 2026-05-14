@@ -1,34 +1,22 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { MOCK_ROOMS, type Room } from "@/lib/mock-data";
 import { RoomCard } from "@/components/RoomCard";
 
-export const Route = createFileRoute("/rooms/")({
-  head: () => ({
-    meta: [
-      { title: "ロビー — BLOCK-JANKEN" },
-      { name: "description", content: "稼働中のじゃんけんルーム一覧。参加・観戦・新規作成。" },
-    ],
-  }),
-  component: RoomsPage,
-});
-
 type StakeFilter = "all" | 1 | 5 | 10;
 
-function RoomsPage() {
+export function RoomsPage() {
+  useLayoutEffect(() => {
+    document.title = "ロビー — BLOCK-JANKEN";
+  }, []);
+
   const [stake, setStake] = useState<StakeFilter>("all");
-  const [size, setSize] = useState<"all" | 2 | 3>("all");
   const [open, setOpen] = useState(false);
   const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
 
   const filtered = useMemo(
-    () =>
-      rooms.filter(
-        (r) =>
-          (stake === "all" || r.stake === stake) &&
-          (size === "all" || r.maxPlayers === size),
-      ),
-    [rooms, stake, size],
+    () => rooms.filter((r) => stake === "all" || r.stake === stake),
+    [rooms, stake],
   );
 
   return (
@@ -44,6 +32,7 @@ function RoomsPage() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setOpen(true)}
           className="px-6 py-3 bg-primary text-primary-foreground font-black hover:scale-[1.02] transition-transform"
         >
@@ -59,20 +48,23 @@ function RoomsPage() {
             </Chip>
           ))}
         </FilterGroup>
-        <FilterGroup label="PLAYERS">
-          {(["all", 2, 3] as const).map((v) => (
-            <Chip key={String(v)} active={size === v} onClick={() => setSize(v)}>
-              {v === "all" ? "全て" : `${v}人`}
-            </Chip>
-          ))}
-        </FilterGroup>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((r) => <RoomCard key={r.id} room={r} />)}
+        {filtered.map((r) => (
+          <RoomCard key={r.id} room={r} />
+        ))}
       </div>
 
-      {open && <CreateRoomModal onClose={() => setOpen(false)} onCreate={(r) => { setRooms([r, ...rooms]); setOpen(false); }} />}
+      {open && (
+        <CreateRoomModal
+          onClose={() => setOpen(false)}
+          onCreate={(r) => {
+            setRooms([r, ...rooms]);
+            setOpen(false);
+          }}
+        />
+      )}
     </main>
   );
 }
@@ -86,9 +78,18 @@ function FilterGroup({ label, children }: { label: string; children: React.React
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={
         "px-3 py-1 text-xs font-bold border transition-colors " +
@@ -102,21 +103,36 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-function CreateRoomModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r: Room) => void }) {
+function CreateRoomModal({
+  onClose,
+  onCreate,
+}: {
+  onClose: () => void;
+  onCreate: (r: Room) => void;
+}) {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [stake, setStake] = useState<1 | 5 | 10>(1);
-  const [max, setMax] = useState<2 | 3>(2);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={onClose}
+      onKeyDown={(e) => e.key === "Escape" && onClose()}
+      role="presentation"
+    >
       <div
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
         className="glass-panel rounded-2xl p-8 max-w-md w-full bg-card"
       >
         <div className="flex justify-between items-start mb-6">
           <h2 className="text-2xl font-black">ルーム作成</h2>
-          <button onClick={onClose} className="text-white/40 hover:text-white">×</button>
+          <button type="button" onClick={onClose} className="text-white/40 hover:text-white">
+            ×
+          </button>
         </div>
         <form
           onSubmit={(e) => {
@@ -126,19 +142,21 @@ function CreateRoomModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               id,
               name: name || "新しいルーム",
               host: "Player_404",
-              maxPlayers: max,
+              maxPlayers: 2,
               stake,
               players: ["Player_404"],
               status: "waiting",
               createdAt: Date.now(),
             };
             onCreate(newRoom);
-            navigate({ to: "/rooms/$roomId", params: { roomId: id }, search: { mode: "player" as const } });
+            navigate(`/rooms/${id}?mode=player`);
           }}
           className="space-y-5"
         >
           <div>
-            <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">ROOM NAME</label>
+            <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">
+              ROOM NAME
+            </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -147,25 +165,9 @@ function CreateRoomModal({ onClose, onCreate }: { onClose: () => void; onCreate:
             />
           </div>
           <div>
-            <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">PLAYERS</label>
-            <div className="grid grid-cols-2 gap-2">
-              {([2, 3] as const).map((v) => (
-                <button
-                  type="button"
-                  key={v}
-                  onClick={() => setMax(v)}
-                  className={
-                    "py-3 font-black border " +
-                    (max === v ? "bg-primary text-primary-foreground border-primary" : "bg-white/5 border-border text-white/60")
-                  }
-                >
-                  {v}人対戦
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">STAKE</label>
+            <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">
+              STAKE
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {([1, 5, 10] as const).map((v) => (
                 <button
@@ -174,7 +176,9 @@ function CreateRoomModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   onClick={() => setStake(v)}
                   className={
                     "py-3 font-accent text-2xl border " +
-                    (stake === v ? "bg-primary text-primary-foreground border-primary" : "bg-white/5 border-border text-white/60")
+                    (stake === v
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-white/5 border-border text-white/60")
                   }
                 >
                   ${v}

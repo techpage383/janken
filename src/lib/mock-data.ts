@@ -5,7 +5,7 @@ export interface Room {
   id: string;
   name: string;
   host: string;
-  maxPlayers: 2 | 3;
+  maxPlayers: 2;
   stake: 1 | 5 | 10;
   players: string[];
   status: RoomStatus;
@@ -83,15 +83,14 @@ function pick<T>(arr: T[], n: number, salt = 0): T {
 
 const FIXED_NOW = 1747200000000; // stable timestamp for SSR/client parity
 export const MOCK_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
-  const max = pick<2 | 3>([2, 2, 3], i, 1);
   const stake = pick<1 | 5 | 10>([1, 1, 5, 5, 10], i, 2);
-  const playerCount = Math.min(max, Math.floor(hash(i, 3) * max) + 1);
-  const status: RoomStatus = playerCount === max ? "playing" : "waiting";
+  const playerCount = Math.min(2, Math.floor(hash(i, 3) * 2) + 1);
+  const status: RoomStatus = playerCount === 2 ? "playing" : "waiting";
   return {
     id: `room-${1000 + i}`,
     name: ROOM_NAMES[i % ROOM_NAMES.length],
     host: HOSTS[i % HOSTS.length],
-    maxPlayers: max,
+    maxPlayers: 2,
     stake,
     players: Array.from({ length: playerCount }, (_, j) =>
       j === 0 ? HOSTS[i % HOSTS.length] : pick(HOSTS, i * 10 + j, 4),

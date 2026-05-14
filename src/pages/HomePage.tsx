@@ -1,18 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
+import { useLayoutEffect } from "react";
 import { MOCK_ROOMS, MOCK_MATCHES, HAND_EMOJI } from "@/lib/mock-data";
 import { RoomCard } from "@/components/RoomCard";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム" },
-      { name: "description", content: "ブロックチェーンで遊ぶ究極のじゃんけん。世界中のプレイヤーと対戦・観戦できる分散型ゲームロビー。" },
-    ],
-  }),
-  component: TopPage,
-});
+export function HomePage() {
+  useLayoutEffect(() => {
+    document.title = "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム";
+  }, []);
 
-function TopPage() {
   const featured = MOCK_ROOMS.slice(0, 4);
   const recent = MOCK_MATCHES.slice(0, 6);
 
@@ -25,7 +20,8 @@ function TopPage() {
               Season 04 Active
             </div>
             <h1 className="text-5xl md:text-6xl font-black leading-tight text-balance">
-              世界中のプレイヤーと<br />
+              世界中のプレイヤーと
+              <br />
               <span className="text-primary">ガチじゃんけん。</span>
             </h1>
             <p className="text-white/60 text-base max-w-md">
@@ -58,12 +54,17 @@ function TopPage() {
               <span className="size-3 bg-secondary rounded-full" />
               注目のルーム <span className="text-white/40 font-mono text-sm ml-2">[FEATURED]</span>
             </h2>
-            <Link to="/rooms" className="text-xs font-bold tracking-widest text-white/60 hover:text-primary uppercase">
+            <Link
+              to="/rooms"
+              className="text-xs font-bold tracking-widest text-white/60 hover:text-primary uppercase"
+            >
               See all →
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {featured.map((r) => <RoomCard key={r.id} room={r} />)}
+            {featured.map((r) => (
+              <RoomCard key={r.id} room={r} />
+            ))}
           </div>
         </section>
       </div>
@@ -87,11 +88,16 @@ function TopPage() {
                     <p className="text-[10px] text-white/40 truncate">が {m.loser} に勝利</p>
                   </div>
                 </div>
-                <span className="font-accent text-lg text-success shrink-0">+${m.payout.toFixed(2)}</span>
+                <span className="font-accent text-lg text-success shrink-0">
+                  +${m.payout.toFixed(2)}
+                </span>
               </div>
             ))}
           </div>
-          <Link to="/history" className="block w-full py-3 text-center text-[10px] font-bold tracking-widest text-white/60 uppercase hover:bg-white/5 border-t border-border">
+          <Link
+            to="/history"
+            className="block w-full py-3 text-center text-[10px] font-bold tracking-widest text-white/60 uppercase hover:bg-white/5 border-t border-border"
+          >
             すべての履歴を見る →
           </Link>
         </div>
@@ -99,14 +105,21 @@ function TopPage() {
         <div className="glass-panel rounded-2xl p-6 space-y-3">
           <h3 className="text-sm font-black tracking-tighter">遊び方</h3>
           <ol className="space-y-2 text-sm text-white/70">
-            <li><span className="text-primary font-mono mr-2">01</span>ルームを作るか参加する</li>
-            <li><span className="text-primary font-mono mr-2">02</span>賞金額を選択（$1/$5/$10）</li>
-            <li><span className="text-primary font-mono mr-2">03</span>グー・チョキ・パーで勝負！</li>
-            <li><span className="text-primary font-mono mr-2">04</span>勝者が賞金を獲得</li>
+            <li>
+              <span className="text-primary font-mono mr-2">01</span>ルームを作るか参加する
+            </li>
+            <li>
+              <span className="text-primary font-mono mr-2">02</span>賞金額を選択（$1/$5/$10）
+            </li>
+            <li>
+              <span className="text-primary font-mono mr-2">03</span>グー・チョキ・パーで勝負！
+            </li>
+            <li>
+              <span className="text-primary font-mono mr-2">04</span>勝者が賞金を獲得
+            </li>
           </ol>
         </div>
       </aside>
     </main>
   );
 }
-

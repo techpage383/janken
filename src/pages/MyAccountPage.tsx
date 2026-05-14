@@ -1,24 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import { useLayoutEffect } from "react";
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import { ME, MY_MATCHES, HAND_EMOJI, HAND_JP } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/mypage")({
-  head: () => ({
-    meta: [
-      { title: "マイページ — BLOCK-JANKEN" },
-      { name: "description", content: "あなたの対戦履歴・勝率・収支チャート。" },
-    ],
-  }),
-  component: MyPage,
-});
+export function MyAccountPage() {
+  useLayoutEffect(() => {
+    document.title = "マイページ — BLOCK-JANKEN";
+  }, []);
 
-function MyPage() {
   const wins = MY_MATCHES.filter((m) => m.winner === ME.name).length;
   const losses = MY_MATCHES.length - wins;
   const winRate = ((wins / MY_MATCHES.length) * 100).toFixed(1);
-  const totalEarned = MY_MATCHES.reduce((acc, m) => acc + (m.winner === ME.name ? m.payout : -m.stake), 0);
+  const totalEarned = MY_MATCHES.reduce(
+    (acc, m) => acc + (m.winner === ME.name ? m.payout : -m.stake),
+    0,
+  );
 
-  // Build cumulative balance chart
   const sorted = [...MY_MATCHES].sort((a, b) => a.finishedAt - b.finishedAt);
   let cum = 0;
   const chartData = sorted.map((m, i) => {
@@ -29,7 +33,6 @@ function MyPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Profile header */}
       <header className="glass-panel rounded-2xl p-6 flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px]">
@@ -47,12 +50,15 @@ function MyPage() {
         </div>
         <div className="flex gap-6">
           <Stat label="BALANCE" value={`$${ME.balance.toFixed(2)}`} accent />
-          <Stat label="TOTAL EARNED" value={`${totalEarned >= 0 ? "+" : ""}$${totalEarned.toFixed(2)}`} success={totalEarned >= 0} />
+          <Stat
+            label="TOTAL EARNED"
+            value={`${totalEarned >= 0 ? "+" : ""}$${totalEarned.toFixed(2)}`}
+            success={totalEarned >= 0}
+          />
         </div>
       </header>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Stats panel */}
         <div className="col-span-12 lg:col-span-4 space-y-4">
           <div className="glass-panel rounded-2xl p-6">
             <p className="text-[10px] font-mono text-white/40 tracking-widest mb-2">WIN RATE</p>
@@ -77,12 +83,13 @@ function MyPage() {
           </div>
         </div>
 
-        {/* Chart */}
         <div className="col-span-12 lg:col-span-8 glass-panel rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-black tracking-tighter">収支推移</h3>
-              <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">[CUMULATIVE BALANCE]</p>
+              <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+                [CUMULATIVE BALANCE]
+              </p>
             </div>
           </div>
           <div className="h-72">
@@ -98,17 +105,26 @@ function MyPage() {
                 <XAxis dataKey="match" stroke="rgba(255,255,255,0.3)" fontSize={10} />
                 <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} />
                 <Tooltip
-                  contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,0.1)", fontSize: 12 }}
+                  contentStyle={{
+                    background: "#18181b",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    fontSize: 12,
+                  }}
                   labelStyle={{ color: "#facc15" }}
                 />
-                <Area type="monotone" dataKey="balance" stroke="var(--color-primary)" strokeWidth={2} fill="url(#g)" />
+                <Area
+                  type="monotone"
+                  dataKey="balance"
+                  stroke="var(--color-primary)"
+                  strokeWidth={2}
+                  fill="url(#g)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Recent matches */}
       <section>
         <h2 className="text-xl font-black mb-4 flex items-center gap-2">
           <span className="size-3 bg-secondary rounded-full" />
@@ -129,10 +145,12 @@ function MyPage() {
               return (
                 <div key={m.id} className="grid grid-cols-12 gap-4 px-5 py-3 items-center text-sm">
                   <div className="col-span-2">
-                    <span className={
-                      "px-2 py-1 text-[10px] font-black rounded " +
-                      (won ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")
-                    }>
+                    <span
+                      className={
+                        "px-2 py-1 text-[10px] font-black rounded " +
+                        (won ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")
+                      }
+                    >
                       {won ? "WIN" : "LOSS"}
                     </span>
                   </div>
@@ -140,10 +158,19 @@ function MyPage() {
                   <div className="col-span-2 flex items-center justify-center gap-2 text-xl">
                     <span title={HAND_JP[m.winnerHand]}>{HAND_EMOJI[m.winnerHand]}</span>
                     <span className="text-white/20 text-xs">vs</span>
-                    <span className="opacity-60" title={HAND_JP[m.loserHand]}>{HAND_EMOJI[m.loserHand]}</span>
+                    <span className="opacity-60" title={HAND_JP[m.loserHand]}>
+                      {HAND_EMOJI[m.loserHand]}
+                    </span>
                   </div>
-                  <div className="col-span-3 truncate text-xs text-white/60">${m.stake} · {m.roomName}</div>
-                  <div className={"col-span-2 text-right font-accent text-lg " + (won ? "text-success" : "text-destructive")}>
+                  <div className="col-span-3 truncate text-xs text-white/60">
+                    ${m.stake} · {m.roomName}
+                  </div>
+                  <div
+                    className={
+                      "col-span-2 text-right font-accent text-lg " +
+                      (won ? "text-success" : "text-destructive")
+                    }
+                  >
                     {won ? "+" : "-"}${(won ? m.payout : m.stake).toFixed(2)}
                   </div>
                 </div>
@@ -156,14 +183,28 @@ function MyPage() {
   );
 }
 
-function Stat({ label, value, accent, success }: { label: string; value: string; accent?: boolean; success?: boolean }) {
+function Stat({
+  label,
+  value,
+  accent,
+  success,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  success?: boolean;
+}) {
   return (
     <div className="text-right">
       <p className="text-[10px] font-mono text-white/40 tracking-widest">{label}</p>
-      <p className={
-        "font-accent text-3xl leading-none " +
-        (accent ? "text-primary" : success ? "text-success" : "text-foreground")
-      }>{value}</p>
+      <p
+        className={
+          "font-accent text-3xl leading-none " +
+          (accent ? "text-primary" : success ? "text-success" : "text-foreground")
+        }
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -189,7 +230,9 @@ function HandUsage() {
                 <span className="text-lg">{HAND_EMOJI[h]}</span>
                 <span className="font-bold">{HAND_JP[h]}</span>
               </span>
-              <span className="font-mono text-white/60">{counts[h]} ({pct.toFixed(0)}%)</span>
+              <span className="font-mono text-white/60">
+                {counts[h]} ({pct.toFixed(0)}%)
+              </span>
             </div>
             <div className="h-2 bg-white/5 rounded-full overflow-hidden">
               <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
