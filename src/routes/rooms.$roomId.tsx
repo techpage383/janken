@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MOCK_ROOMS, HAND_EMOJI, HAND_JP, ME, type Hand, determineWinner } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/rooms/$roomId")({
@@ -39,18 +39,84 @@ function RoomPage() {
   const [oppHand, setOppHand] = useState<Hand | null>(null);
   const [resolving, setResolving] = useState(false);
   const [viewers, setViewers] = useState(42);
+  // ラウンドフェーズ: 観戦者にもリアルタイム同期される共有状態
+  type Phase = "idle" | "selecting" | "reveal";
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [round, setRound] = useState(1);
+  const [log, setLog] = useState<{ round: number; a: Hand; b: Hand; winner: "a" | "b" | "draw" }[]>([]);
+  const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const HANDS: Hand[] = ["rock", "paper", "scissors"];
+
+  function clearTick() {
+    if (tickRef.current) clearTimeout(tickRef.current);
+    tickRef.current = null;
+  }
+
+  // 観戦モード: 自動でラウンドを進めるシミュレーション (リアルタイム同期の代用)
+  useEffect(() => {
+    if (mode !== "spectator") {
+      clearTick();
+      return;
+    }
+    let cancelled = false;
+    function runRound() {
+      if (cancelled) return;
+      setPhase("selecting");
+      setMyHand(null);
+      setOppHand(null);
+      tickRef.current = setTimeout(() => {
+        if (cancelled) return;
+        const a = HANDS[Math.floor(Math.random() * 3)];
+        const b = HANDS[Math.floor(Math.random() * 3)];
+        setMyHand(a);
+        setOppHand(b);
+        setPhase("reveal");
+        const w = determineWinner(a, b);
+        setLog((l) => [{ round: roundRef.current, a, b, winner: w }, ...l].slice(0, 8));
+        tickRef.current = setTimeout(() => {
+          if (cancelled) return;
+          roundRef.current += 1;
+          setRound(roundRef.current);
+          runRound();
+        }, 3500);
+      }, 1800);
+    }
+    const startDelay = setTimeout(runRound, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(startDelay);
+      clearTick();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  // round の最新値を effect 内で参照するための ref
+  const roundRef = useRef(round);
+  useEffect(() => { roundRef.current = round; }, [round]);
+
+  // 観戦中のビューワー数を微変動 (リアルタイム感)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setViewers((v) => Math.max(1, v + (Math.random() > 0.5 ? 1 : -1)));
+    }, 3000);
+    return () => clearInterval(id);
+  }, []);
 
   function play(h: Hand) {
     if (mode !== "player" || !joined) return;
     setMyHand(h);
     setOppHand(null);
     setResolving(true);
+    setPhase("selecting");
     setTimeout(() => {
       const opp = HANDS[Math.floor(Math.random() * 3)];
       setOppHand(opp);
       setResolving(false);
+      setPhase("reveal");
+      const w = determineWinner(h, opp);
+      setLog((l) => [{ round: roundRef.current, a: h, b: opp, winner: w }, ...l].slice(0, 8));
+      setRound((r) => r + 1);
     }, 1200);
   }
 
@@ -59,6 +125,7 @@ function RoomPage() {
     setMode(next);
     setMyHand(null);
     setOppHand(null);
+    setPhase("idle");
     if (next === "spectator") {
       setJoined(false);
       setViewers((v) => v + 1);
