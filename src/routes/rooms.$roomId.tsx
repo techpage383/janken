@@ -149,6 +149,13 @@ function RoomPage() {
           : "lose"
       : null;
 
+  // 観戦者目線では「勝利/敗北」ではなくプレイヤー名で表示
+  const spectatorResultLabel = (() => {
+    if (!result) return null;
+    if (result === "draw") return "DRAW";
+    return result === "win" ? "YOU WIN" : `${room.host} WIN`;
+  })();
+
   return (
     <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
       <div className="col-span-12 lg:col-span-8 space-y-6">
@@ -217,19 +224,39 @@ function RoomPage() {
 
         <section className="glass-panel rounded-2xl p-8">
           <div className="grid grid-cols-3 items-center gap-4 mb-8">
-            <PlayerSlot name="YOU" hand={myHand} highlight={result === "win"} />
+            <PlayerSlot
+              name={mode === "spectator" ? ME.name : "YOU"}
+              hand={myHand}
+              highlight={result === "win"}
+              loading={mode === "spectator" && phase === "selecting"}
+            />
             <div className="text-center">
               <div className="font-accent text-5xl text-primary">VS</div>
-              {result && (
+              <div className="text-[10px] font-mono text-white/40 mt-1 tracking-widest">
+                ROUND {round}
+              </div>
+              {phase === "selecting" && !result && (
+                <div className="mt-3 text-xs text-white/50 animate-pulse font-mono tracking-widest">
+                  SELECTING...
+                </div>
+              )}
+              {result && phase === "reveal" && (
                 <div className={
                   "mt-3 font-black text-xl " +
                   (result === "win" ? "text-success" : result === "lose" ? "text-destructive" : "text-white/60")
                 }>
-                  {result === "win" ? "勝利！" : result === "lose" ? "敗北..." : "あいこ"}
+                  {mode === "spectator"
+                    ? spectatorResultLabel
+                    : result === "win" ? "勝利！" : result === "lose" ? "敗北..." : "あいこ"}
                 </div>
               )}
             </div>
-            <PlayerSlot name={room.host} hand={oppHand} highlight={result === "lose"} loading={resolving} />
+            <PlayerSlot
+              name={room.host}
+              hand={oppHand}
+              highlight={result === "lose"}
+              loading={resolving || (mode === "spectator" && phase === "selecting")}
+            />
           </div>
 
           <div className="border-t border-border pt-6">
@@ -274,11 +301,55 @@ function RoomPage() {
               <div className="text-center space-y-2 py-4">
                 <p className="font-accent text-2xl text-secondary">SPECTATOR MODE</p>
                 <p className="text-xs text-white/50">
-                  観戦中は手を出せません。プレイヤーの動きをリアルタイムで観戦できます。
+                  観戦中は手を出せません。プレイヤーの手と結果がリアルタイムで同期表示されます。
                 </p>
+                <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-white/5 border border-border">
+                  <span className={
+                    "size-2 rounded-full " +
+                    (phase === "selecting" ? "bg-primary animate-pulse"
+                      : phase === "reveal" ? "bg-success" : "bg-white/30")
+                  } />
+                  <span className="font-mono text-[10px] tracking-widest text-white/60 uppercase">
+                    {phase === "selecting" ? "プレイヤー選択中"
+                      : phase === "reveal" ? "結果発表"
+                      : "次ラウンド準備中"}
+                  </span>
+                </div>
               </div>
             )}
           </div>
+        </section>
+
+        {/* 直近ラウンドの履歴 — 参加者・観戦者ともに同じデータを共有 */}
+        <section className="glass-panel rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-black tracking-tighter">直近のラウンド</h3>
+            <span className="font-mono text-[10px] text-white/40 tracking-widest uppercase flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-destructive animate-pulse" />
+              LIVE SYNC
+            </span>
+          </div>
+          {log.length === 0 ? (
+            <p className="text-xs text-white/30 text-center py-4">まだラウンドがありません</p>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {log.map((r, i) => (
+                <div key={`${r.round}-${i}`} className="flex items-center gap-3 py-2 text-sm">
+                  <span className="font-mono text-[10px] text-white/40 w-12">R{r.round}</span>
+                  <span className="text-2xl">{HAND_EMOJI[r.a]}</span>
+                  <span className="text-white/20 text-xs">vs</span>
+                  <span className="text-2xl">{HAND_EMOJI[r.b]}</span>
+                  <span className="ml-auto font-black text-[10px] tracking-widest">
+                    {r.winner === "draw"
+                      ? <span className="text-white/40">DRAW</span>
+                      : r.winner === "a"
+                        ? <span className="text-success">P1 WIN</span>
+                        : <span className="text-destructive">P2 WIN</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
