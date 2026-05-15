@@ -16,6 +16,7 @@ export function useMatchesList(limit = 120) {
   return {
     matches: q.data ?? [],
     isError: q.isError,
+    error: q.error,
     isFetching: q.isFetching,
     isPending: q.isPending,
   };

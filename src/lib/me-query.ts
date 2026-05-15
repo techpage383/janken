@@ -17,6 +17,7 @@ export function useMeData(playerName = PLAYER_NAME) {
     profile: q.data?.profile,
     matches: q.data?.matches ?? [],
     isError: q.isError,
+    error: q.error,
     isPending: q.isPending,
     isFetching: q.isFetching,
     refetch: q.refetch,

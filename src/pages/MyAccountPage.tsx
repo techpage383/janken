@@ -9,7 +9,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/janken-types";
-import { PLAYER_NAME } from "@/lib/player";
+import { describeApiFailure } from "@/lib/api-error-hint";
 import { useMeData } from "@/lib/me-query";
 
 export function MyAccountPage() {
@@ -17,7 +17,7 @@ export function MyAccountPage() {
     document.title = "マイページ — BLOCK-JANKEN";
   }, []);
 
-  const { profile, matches, isPending, isError } = useMeData();
+  const { profile, matches, isPending, isError, error } = useMeData();
 
   if (isPending) {
     return (
@@ -31,9 +31,9 @@ export function MyAccountPage() {
     return (
       <main className="max-w-7xl mx-auto p-6 space-y-4">
         <h1 className="text-2xl font-black">マイページ</h1>
-        <p className="text-sm text-destructive">
-          プロフィールを取得できませんでした。APIとDBを確認してください（プレイヤー名: {PLAYER_NAME}
-          ）。
+        <p className="text-sm font-bold text-destructive">プロフィールを取得できませんでした</p>
+        <p className="text-sm text-white/80 leading-relaxed max-w-2xl">
+          {describeApiFailure(error)}
         </p>
       </main>
     );

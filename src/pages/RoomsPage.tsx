@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createRoom } from "@/lib/api";
+import { describeApiFailure } from "@/lib/api-error-hint";
 import type { Room } from "@/lib/janken-types";
 import { PLAYER_NAME } from "@/lib/player";
 import { RoomCard } from "@/components/RoomCard";
@@ -16,7 +17,7 @@ export function RoomsPage() {
     document.title = "ロビー — BLOCK-JANKEN";
   }, []);
 
-  const { rooms, isError, isFetching } = useRoomsList();
+  const { rooms, isError, error, isFetching } = useRoomsList();
 
   const [stake, setStake] = useState<StakeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<LobbyStatusFilter>("all");
@@ -54,6 +55,15 @@ export function RoomsPage() {
           + ルーム作成
         </button>
       </header>
+
+      {isError ? (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+          <p className="font-bold text-destructive">API接続エラー</p>
+          <p className="mt-2 text-xs text-white/85 leading-relaxed normal-case font-sans">
+            {describeApiFailure(error)}
+          </p>
+        </div>
+      ) : null}
 
       <div className="glass-panel rounded-xl p-4 flex flex-wrap gap-6">
         <FilterGroup label="表示">

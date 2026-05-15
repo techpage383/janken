@@ -16,6 +16,7 @@ export function useDashboardData() {
     featuredRooms: q.data?.featuredRooms ?? [],
     recentMatches: q.data?.recentMatches ?? [],
     isError: q.isError,
+    error: q.error,
     isFetching: q.isFetching,
     isPending: q.isPending,
   };

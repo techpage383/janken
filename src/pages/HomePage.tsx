@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import { HAND_EMOJI } from "@/lib/janken-types";
+import { describeApiFailure } from "@/lib/api-error-hint";
 import { useDashboardData } from "@/lib/dashboard-query";
 import { RoomCard } from "@/components/RoomCard";
 
@@ -9,7 +10,7 @@ export function HomePage() {
     document.title = "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム";
   }, []);
 
-  const { featuredRooms, recentMatches, isError, isFetching } = useDashboardData();
+  const { featuredRooms, recentMatches, isError, error, isFetching } = useDashboardData();
 
   return (
     <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
@@ -55,7 +56,7 @@ export function HomePage() {
               注目のルーム <span className="text-white/40 font-mono text-sm ml-2">[FEATURED]</span>
             </h2>
             <div className="flex items-center gap-4">
-              <p className="text-[10px] font-mono text-white/40 uppercase">
+              <p className="text-[10px] font-mono text-white/40 uppercase text-right max-w-md">
                 {isFetching ? "更新中… " : ""}
                 {isError ? "API接続エラー" : ""}
               </p>
@@ -67,6 +68,14 @@ export function HomePage() {
               </Link>
             </div>
           </div>
+          {isError ? (
+            <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+              <p className="font-bold text-destructive">API接続エラー</p>
+              <p className="mt-2 text-xs text-white/80 leading-relaxed normal-case font-sans">
+                {describeApiFailure(error)}
+              </p>
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {featuredRooms.map((r) => (
               <RoomCard key={r.id} room={r} />

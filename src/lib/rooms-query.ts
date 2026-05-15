@@ -17,6 +17,7 @@ export function useRoomsList() {
   return {
     rooms: q.data ?? [],
     isError: q.isError,
+    error: q.error,
     isFetching: q.isFetching,
     isPending: q.isPending,
     refetch: q.refetch,

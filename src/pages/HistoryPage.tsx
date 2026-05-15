@@ -1,10 +1,11 @@
 import { useLayoutEffect, useState } from "react";
 import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/janken-types";
+import { describeApiFailure } from "@/lib/api-error-hint";
 import { useMatchesList } from "@/lib/matches-query";
 
 export function HistoryPage() {
   const [mounted, setMounted] = useState(false);
-  const { matches, isError, isFetching } = useMatchesList(120);
+  const { matches, isError, error, isFetching } = useMatchesList(120);
 
   useLayoutEffect(() => {
     document.title = "対戦履歴 — BLOCK-JANKEN";
@@ -22,6 +23,13 @@ export function HistoryPage() {
           [LIVE FEED] {isFetching ? "更新中… " : ""}
           {isError ? "API接続エラー" : "APIから4秒ごとに更新"}
         </p>
+        {isError ? (
+          <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm max-w-3xl">
+            <p className="text-xs text-white/85 leading-relaxed normal-case font-sans tracking-normal">
+              {describeApiFailure(error)}
+            </p>
+          </div>
+        ) : null}
       </header>
 
       <div className="glass-panel rounded-2xl overflow-hidden">
