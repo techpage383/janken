@@ -1,7 +1,14 @@
 import type { Match, Room } from "@/lib/janken-types";
 
+/**
+ * Base URL for API requests.
+ * - Dev (default): empty string → same origin + Vite proxy `/api` → Express
+ * - Production: empty → same host as the built SPA (Express serves `dist/`)
+ * - Override: set VITE_API_URL=http://localhost:3000 if you skip the proxy
+ */
 export function getApiBase(): string {
-  const raw = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+  const raw = import.meta.env.VITE_API_URL;
+  if (raw === undefined || raw === "") return "";
   return raw.replace(/\/$/, "");
 }
 

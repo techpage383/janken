@@ -1,3 +1,5 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
 import { config } from "./config.ts";
@@ -7,8 +9,12 @@ import { matchesRouter } from "./routes/matches.ts";
 import { meRouter } from "./routes/me.ts";
 import { roomsRouter } from "./routes/rooms.ts";
 
+const serverDir = dirname(fileURLToPath(import.meta.url));
+const clientDist = join(serverDir, "..", "dist");
+
 export function createApp(): express.Application {
   const app = express();
+  const isProduction = process.env.NODE_ENV === "production";
 
   app.use(
     cors({
@@ -37,6 +43,19 @@ export function createApp(): express.Application {
   app.use("/api/matches", matchesRouter);
   app.use("/api/me", meRouter);
   app.use("/api/stats/dashboard", dashboardRouter);
+
+  if (isProduction) {
+    app.use(express.static(clientDist));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api") || req.path === "/health") {
+        next();
+        return;
+      }
+      res.sendFile(join(clientDist, "index.html"), (err) => {
+        if (err) next(err);
+      });
+    });
+  }
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Not found" });

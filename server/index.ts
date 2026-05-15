@@ -34,7 +34,17 @@ async function main(): Promise<void> {
   const server = app.listen(config.port);
 
   server.once("listening", () => {
-    console.log(`Express API listening on http://localhost:${config.port}`);
+    const prod = process.env.NODE_ENV === "production";
+    console.log(
+      prod
+        ? `Server (API + React build) http://localhost:${config.port}`
+        : `Express API http://localhost:${config.port}`,
+    );
+    if (prod) {
+      console.log("Serving static files from dist/");
+    } else {
+      console.log("Dev: run Vite on :8080 (npm run dev:client) — proxy /api → this server");
+    }
     console.log(
       `MySQL: ${config.mysql.user}@${config.mysql.host}:${config.mysql.port}/${config.mysql.database}`,
     );
