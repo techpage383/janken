@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { Room } from "@/lib/janken-types";
+import { stakeTierLabel, type Room } from "@/lib/types";
 
 export function RoomCard({ room }: { room: Room }) {
   const isFull = room.players.length >= room.maxPlayers;
@@ -12,7 +12,9 @@ export function RoomCard({ room }: { room: Room }) {
           </span>
           <h4 className="text-lg font-bold truncate">{room.name}</h4>
         </div>
-        <div className="font-accent text-3xl text-primary shrink-0 ml-3">${room.stake}</div>
+        <div className="font-accent text-xl text-primary shrink-0 ml-3 text-right leading-tight">
+          {stakeTierLabel(room.stake)}
+        </div>
       </div>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

@@ -1,12 +1,13 @@
 /**
  * Initial rows for an empty database (server-only). Not bundled to the SPA.
  */
-import type { Hand, Match, Room, RoomStatus } from "../../src/lib/janken-types.ts";
+import type { Hand, Match, Room, RoomStatus, StakeTier } from "../../src/lib/types.ts";
+import { STAKE_TIERS } from "../../src/lib/types.ts";
 
 export const SEED_PLAYER = {
   name: "Player_404",
   wallet: "0x71C...8e9A",
-  balance: 1245.5,
+  balance: 12_450,
 };
 
 const HOSTS = [
@@ -24,7 +25,7 @@ const HOSTS = [
 
 const ROOM_NAMES = [
   "最強決定戦・本気勢のみ",
-  "$1で遊ぼう！初心者歓迎",
+  "10コインで遊ぼう！初心者歓迎",
   "夜のじゃんけん部屋",
   "運試し・スピード勝負",
   "週末の真剣勝負ルーム",
@@ -49,8 +50,9 @@ function pick<T>(arr: T[], n: number, salt = 0): T {
 
 const FIXED_NOW = 1747200000000;
 
+/** Two sample rooms per stake tier (10 / 20 / 50 / 100 coins). */
 export const SEED_ROOMS: Room[] = Array.from({ length: 8 }, (_, i) => {
-  const stake = pick<1 | 5 | 10>([1, 1, 5, 5, 10], i, 2);
+  const stake = STAKE_TIERS[Math.floor(i / 2)] as StakeTier;
   const playerCount = Math.min(2, Math.floor(hash(i, 3) * 2) + 1);
   const status: RoomStatus = playerCount === 2 ? "playing" : "waiting";
   return {
@@ -81,7 +83,7 @@ const SEED_GLOBAL_MATCHES: Match[] = Array.from({ length: 30 }, (_, i) => {
   let salt = 12;
   while (loser === winner) loser = pick(HOSTS, i, salt++);
   const winnerHand = pick(HANDS, i, 20);
-  const stake = pick([1, 5, 10], i, 21);
+  const stake = pick([...STAKE_TIERS], i, 21);
   return {
     id: `m-${i}`,
     roomId: `room-${1000 + (i % 8)}`,
@@ -99,7 +101,7 @@ const SEED_GLOBAL_MATCHES: Match[] = Array.from({ length: 30 }, (_, i) => {
 const SEED_MY_MATCHES: Match[] = Array.from({ length: 25 }, (_, i) => {
   const won = hash(i, 30) > 0.36;
   const opp = pick(HOSTS, i, 31);
-  const stake = pick([1, 5, 10], i, 32);
+  const stake = pick([...STAKE_TIERS], i, 32);
   const myHand = pick(HANDS, i, 33);
   return {
     id: `my-${i}`,

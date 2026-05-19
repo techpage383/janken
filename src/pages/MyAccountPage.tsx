@@ -8,16 +8,16 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/janken-types";
-import { describeApiFailure } from "@/lib/api-error-hint";
-import { useMeData } from "@/lib/me-query";
+import { describeApiFailure } from "@/lib/api";
+import { useMe } from "@/lib/queries";
+import { HAND_EMOJI, HAND_JP, type Match, formatCoinsWithUnit } from "@/lib/types";
 
 export function MyAccountPage() {
   useLayoutEffect(() => {
     document.title = "マイページ — BLOCK-JANKEN";
   }, []);
 
-  const { profile, matches, isPending, isError, error } = useMeData();
+  const { profile, matches, isPending, isError, error } = useMe();
 
   if (isPending) {
     return (
@@ -75,13 +75,16 @@ export function MyAccountPage() {
           </div>
         </div>
         <div className="flex gap-6">
-          <Stat label="BALANCE" value={`$${profile.balance.toFixed(2)}`} accent />
+          <Stat label="コイン残高" value={formatCoinsWithUnit(profile.balance)} accent />
           <Stat
-            label="TOTAL EARNED"
-            value={`${totalEarned >= 0 ? "+" : ""}$${totalEarned.toFixed(2)}`}
+            label="累計損益"
+            value={`${totalEarned >= 0 ? "+" : ""}${formatCoinsWithUnit(Math.abs(totalEarned))}`}
             success={totalEarned >= 0}
           />
         </div>
+        <p className="w-full text-[10px] font-mono text-white/40 mt-2">
+          残高は DB の値。グラフは対戦履歴からの試算です。
+        </p>
       </header>
 
       <div className="grid grid-cols-12 gap-6">
@@ -189,7 +192,7 @@ export function MyAccountPage() {
                     </span>
                   </div>
                   <div className="col-span-3 truncate text-xs text-white/60">
-                    ${m.stake} · {m.roomName}
+                    {formatCoinsWithUnit(m.stake)} · {m.roomName}
                   </div>
                   <div
                     className={
@@ -197,7 +200,8 @@ export function MyAccountPage() {
                       (won ? "text-success" : "text-destructive")
                     }
                   >
-                    {won ? "+" : "-"}${(won ? m.payout : m.stake).toFixed(2)}
+                    {won ? "+" : "-"}
+                    {formatCoinsWithUnit(won ? m.payout : m.stake)}
                   </div>
                 </div>
               );

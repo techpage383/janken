@@ -2,14 +2,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createRoom } from "@/lib/api";
-import { describeApiFailure } from "@/lib/api-error-hint";
-import type { Room } from "@/lib/janken-types";
+import { api, describeApiFailure } from "@/lib/api";
 import { PLAYER_NAME } from "@/lib/player";
+import { roomsQueryKey, useRooms } from "@/lib/queries";
+import {
+  STAKE_TIERS,
+  formatCoinsWithUnit,
+  stakeTierLabel,
+  type Room,
+  type StakeTier,
+} from "@/lib/types";
 import { RoomCard } from "@/components/RoomCard";
-import { roomsQueryKey, useRoomsList } from "@/lib/rooms-query";
 
-type StakeFilter = "all" | 1 | 5 | 10;
+type StakeFilter = "all" | StakeTier;
 type LobbyStatusFilter = "all" | "waiting";
 
 export function RoomsPage() {
@@ -17,7 +22,7 @@ export function RoomsPage() {
     document.title = "ロビー — BLOCK-JANKEN";
   }, []);
 
-  const { rooms, isError, error, isFetching } = useRoomsList();
+  const { rooms, isError, error, isFetching } = useRooms();
 
   const [stake, setStake] = useState<StakeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<LobbyStatusFilter>("all");
@@ -74,10 +79,13 @@ export function RoomsPage() {
             待機中
           </Chip>
         </FilterGroup>
-        <FilterGroup label="STAKE">
-          {(["all", 1, 5, 10] as const).map((v) => (
-            <Chip key={String(v)} active={stake === v} onClick={() => setStake(v)}>
-              {v === "all" ? "全て" : `$${v}`}
+        <FilterGroup label="コイン額">
+          <Chip active={stake === "all"} onClick={() => setStake("all")}>
+            全て
+          </Chip>
+          {STAKE_TIERS.map((v) => (
+            <Chip key={v} active={stake === v} onClick={() => setStake(v)}>
+              {formatCoinsWithUnit(v)}
             </Chip>
           ))}
         </FilterGroup>
@@ -131,7 +139,7 @@ function Chip({
 function CreateRoomModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [stake, setStake] = useState<1 | 5 | 10>(1);
+  const [stake, setStake] = useState<StakeTier>(STAKE_TIERS[0]);
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -159,7 +167,7 @@ function CreateRoomModal({ onClose }: { onClose: () => void }) {
             e.preventDefault();
             setSubmitting(true);
             try {
-              const room = await createRoom({
+              const room = await api.createRoom({
                 stake,
                 host: PLAYER_NAME,
                 name: "新しいルーム",
@@ -178,22 +186,22 @@ function CreateRoomModal({ onClose }: { onClose: () => void }) {
         >
           <div>
             <label className="text-[10px] font-mono text-white/40 tracking-widest block mb-2">
-              STAKE
+              ベット（サイト内コイン）
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {([1, 5, 10] as const).map((v) => (
+            <div className="grid grid-cols-2 gap-2">
+              {STAKE_TIERS.map((v) => (
                 <button
                   type="button"
                   key={v}
                   onClick={() => setStake(v)}
                   className={
-                    "py-3 font-accent text-2xl border " +
+                    "py-3 font-bold text-sm border " +
                     (stake === v
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-white/5 border-border text-white/60")
                   }
                 >
-                  ${v}
+                  {stakeTierLabel(v)}
                 </button>
               ))}
             </div>

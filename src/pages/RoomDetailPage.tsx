@@ -1,7 +1,16 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useRoomDetailQuery } from "@/lib/room-detail-query";
-import { HAND_EMOJI, HAND_JP, type Hand, type Room, determineWinner } from "@/lib/janken-types";
+import { useRoom } from "@/lib/queries";
+import {
+  HAND_EMOJI,
+  HAND_JP,
+  calcWinPayout,
+  determineWinner,
+  formatCoinsWithUnit,
+  stakeTierLabel,
+  type Hand,
+  type Room,
+} from "@/lib/types";
 import { PLAYER_NAME } from "@/lib/player";
 
 function RoomNotFound() {
@@ -28,7 +37,7 @@ export function RoomDetailPage() {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
   const searchMode = searchParams.get("mode") === "spectator" ? "spectator" : "player";
-  const { data: room, isPending, isError } = useRoomDetailQuery(roomId);
+  const { data: room, isPending, isError } = useRoom(roomId);
 
   useLayoutEffect(() => {
     document.title = "対戦ルーム — BLOCK-JANKEN";
@@ -50,6 +59,15 @@ function RoomDetailContent({
   type Mode = "player" | "spectator";
   const isHost = room.host === PLAYER_NAME;
   const seatsLeft = room.maxPlayers - room.players.length;
+  const isFull = seatsLeft <= 0;
+  const opponent =
+    room.players.find((p) => p !== PLAYER_NAME) ?? (isHost ? "相手" : room.host);
+  const roomStatusLabel =
+    room.status === "finished"
+      ? "終了"
+      : isFull || room.status === "playing"
+        ? "対戦中"
+        : "募集中";
   // URL ?mode=spectator が最優先。次に既参加・空席状況でデフォルト判定
   const initialMode: Mode =
     searchMode === "spectator"
@@ -209,7 +227,7 @@ function RoomDetailContent({
   const spectatorResultLabel = (() => {
     if (!result) return null;
     if (result === "draw") return "DRAW";
-    return result === "win" ? "YOU WIN" : `${room.host} WIN`;
+    return result === "win" ? "P1 WIN" : result === "lose" ? "P2 WIN" : "DRAW";
   })();
 
   return (
@@ -230,8 +248,17 @@ function RoomDetailContent({
             </span>
             <h1 className="text-3xl font-black">{room.name}</h1>
             <div className="flex gap-3 mt-3">
-              <span className="px-2 py-1 bg-success/20 text-success text-[10px] font-black rounded">
-                募集中
+              <span
+                className={
+                  "px-2 py-1 text-[10px] font-black rounded " +
+                  (roomStatusLabel === "募集中"
+                    ? "bg-success/20 text-success"
+                    : roomStatusLabel === "対戦中"
+                      ? "bg-white/10 text-white/60"
+                      : "bg-white/5 text-white/40")
+                }
+              >
+                {roomStatusLabel}
               </span>
               <span className="px-2 py-1 bg-white/5 text-white/60 text-[10px] font-black rounded">
                 {room.maxPlayers}人対戦
@@ -249,10 +276,12 @@ function RoomDetailContent({
             </div>
           </div>
           <div className="text-right">
-            <span className="text-[10px] font-mono text-white/40 block">STAKE</span>
-            <span className="font-accent text-5xl text-primary leading-none">${room.stake}</span>
+            <span className="text-[10px] font-mono text-white/40 block">ベット</span>
+            <span className="font-accent text-3xl text-primary leading-tight">
+              {stakeTierLabel(room.stake)}
+            </span>
             <span className="text-[10px] font-mono text-white/40 block mt-1">
-              WIN: ${(room.stake * (room.maxPlayers - 1) * 1.9).toFixed(2)}
+              勝利: {formatCoinsWithUnit(calcWinPayout(room.stake, room.maxPlayers))}
             </span>
           </div>
         </header>
@@ -333,7 +362,7 @@ function RoomDetailContent({
               )}
             </div>
             <PlayerSlot
-              name={room.host}
+              name={opponent}
               hand={oppHand}
               highlight={result === "lose"}
               phase={phase}
@@ -373,14 +402,16 @@ function RoomDetailContent({
             ) : mode === "player" && !joined ? (
               <div className="text-center space-y-3">
                 <p className="text-[10px] font-mono text-white/40 tracking-widest">
-                  プレイヤーとして参加するには着席してください
+                  着席は画面のみのデモです（DBには保存されません）
                 </p>
                 <button
                   onClick={joinSeat}
                   disabled={seatsLeft <= 0}
                   className="px-8 py-3 bg-primary text-primary-foreground font-black hover:scale-[1.02] transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {seatsLeft > 0 ? `+ 着席する ($${room.stake} デポジット)` : "満席"}
+                  {seatsLeft > 0
+                    ? `+ 着席する（${formatCoinsWithUnit(room.stake)} デポジット）`
+                    : "満席"}
                 </button>
               </div>
             ) : (

@@ -1,11 +1,11 @@
 import { useLayoutEffect, useState } from "react";
-import { HAND_EMOJI, HAND_JP, type Match } from "@/lib/janken-types";
-import { describeApiFailure } from "@/lib/api-error-hint";
-import { useMatchesList } from "@/lib/matches-query";
+import { describeApiFailure } from "@/lib/api";
+import { useMatches } from "@/lib/queries";
+import { HAND_EMOJI, HAND_JP, type Match, formatCoinsWithUnit } from "@/lib/types";
 
 export function HistoryPage() {
   const [mounted, setMounted] = useState(false);
-  const { matches, isError, error, isFetching } = useMatchesList(120);
+  const { matches, isError, error, isFetching } = useMatches(120);
 
   useLayoutEffect(() => {
     document.title = "対戦履歴 — BLOCK-JANKEN";
@@ -76,10 +76,10 @@ function MatchRow({ m, mounted }: { m: Match; mounted: boolean }) {
         </span>
       </div>
       <div className="col-span-2 truncate text-xs text-white/60">
-        ${m.stake} · {m.roomName}
+        {formatCoinsWithUnit(m.stake)} · {m.roomName}
       </div>
       <div className="col-span-1 text-right font-accent text-lg text-success">
-        +${m.payout.toFixed(2)}
+        +{formatCoinsWithUnit(m.payout)}
       </div>
     </div>
   );

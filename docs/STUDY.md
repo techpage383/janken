@@ -1,64 +1,61 @@
-# Study guide
+# BLOCK-JANKEN — 学習用ガイド（簡略版）
 
-This file is a reading order for the codebase. The main setup steps are in [README.md](../README.md).
+## フォルダ構成
 
-## 1. Boot sequence
+```
+src/
+  main.tsx          … ルーティング + レイアウト
+  pages/            … 画面（5ページ）
+  components/       … AppShell, RoomCard, Toaster
+  lib/
+    types.ts        … 型 + コイン表示
+    api.ts          … fetch + エラーメッセージ
+    queries.ts      … React Query（データ取得）
+    player.ts       … プレイヤー名（.env）
 
-Read in this order:
+server/
+  index.ts          … 起動（DB → サーバー）
+  app.ts            … Express + 全 API
+  config.ts         … ポート・MySQL・CORS
+  db/
+    schema.sql      … テーブル定義
+    migrate.ts      … マイグレーション
+    seed.ts         … 初回データ投入
+    seed-data.ts    … サンプルデータ
+    repos.ts        … MySQL 読み書き
+    pool.ts         … 接続
+```
 
-1. `server/index.ts` — migrate, seed, start listening  
-2. `server/app.ts` — CORS, JSON body, mount routers, static `dist/` in production  
-3. `src/main.tsx` — React root, React Query, router  
+## データの流れ
 
-## 2. One feature end-to-end: room list
+1. ブラウザ `http://localhost:8080`（Vite）
+2. `/api/*` は Vite が `http://localhost:3000`（Express）へ転送
+3. Express → `repos.ts` → MySQL
 
-| Step | File | What to notice |
-|------|------|----------------|
-| UI | `src/pages/RoomsPage.tsx` | Calls `useRoomsList()` |
-| Cache | `src/lib/rooms-query.ts` | `queryKey`, `queryFn`, `staleTime` |
-| HTTP | `src/lib/api.ts` | `fetchRooms()` → `GET /api/rooms` |
-| Route | `server/routes/rooms.ts` | `roomsRouter.get("/")` |
-| SQL | `server/repositories/rooms.repo.ts` | `findAllRooms()` |
+## API 一覧
 
-## 3. Patterns used (standard React + Express)
+| メソッド | パス | 内容 |
+|---------|------|------|
+| GET | `/api/rooms` | ルーム一覧 |
+| POST | `/api/rooms` | ルーム作成（stake: 10/20/50/100） |
+| GET | `/api/rooms/:id` | ルーム詳細 |
+| GET | `/api/matches` | 対戦履歴 |
+| GET | `/api/me` | 自分のプロフィール（ヘッダ `X-Player-Name`） |
+| GET | `/api/stats/dashboard` | トップ用まとめ |
 
-### Express
+## 仮想コイン
 
-- **Router per resource** under `server/routes/`  
-- **`asyncHandler`** wraps async route functions so errors reach `errorHandler`  
-- **`HttpError`** for 4xx responses with a message  
-- **Zod** validates `POST` bodies before touching the DB  
-- **Repository layer** keeps SQL out of route files  
+- ルームのベット: **10 / 20 / 50 / 100 コイン**
+- プレイヤー残高は `players.balance`（サイト内通貨）
 
-### React
+## 起動
 
-- **React Router** — layout route in `RootLayout`, pages as children  
-- **TanStack Query** — server state (loading/error/refetch), not `useEffect` + `useState` for every fetch  
-- **`api.ts`** — single place for `fetch` URLs and headers (e.g. `X-Player-Name` on `/api/me`)  
+```bash
+# .env をコピーして MySQL で DB `janken` を作成
+npm run dev
+```
 
-### Dev vs production
+## デモの限界（意図的にシンプル）
 
-| Mode | React | API | How `/api` works |
-|------|-------|-----|------------------|
-| `npm run dev` | Vite `:8080` | Express `:3000` | Vite **proxy** |
-| `npm start` | Static `dist/` | Express `:3000` | Same host, no proxy |
-
-## 4. Shared types
-
-`server/tsconfig.json` includes `src/lib/janken-types.ts` so the API can share `Room`, `Match`, and `Hand` types with the frontend without duplicating definitions.
-
-## 5. Suggested exercises
-
-1. **Health check UI** — show `/health` status on the home page.  
-2. **Filter rooms** — query param `?status=waiting` on `GET /api/rooms`.  
-3. **Join room** — `POST /api/rooms/:id/join` and refresh the room detail query.  
-4. **Play round** — persist hands and winner in MySQL instead of local-only simulation in `RoomDetailPage.tsx`.
-
-## 6. Troubleshooting
-
-| Symptom | Check |
-|---------|--------|
-| `API接続エラー` / fetch failed | Is `npm run dev:server` running? MySQL up? |
-| CORS error in browser | Use empty `VITE_API_URL` and open `:8080`, or add your origin to `CORS_ORIGIN` |
-| `EADDRINUSE` on 3000 | Change `PORT` in `.env` and restart both processes |
-| Wrong player data | `VITE_PLAYER_NAME` must match a seeded `players.name` |
+- ルーム内のじゃんけん・着席は **画面だけ**（DB に保存しない）
+- 残高はシード値；マイページのグラフは履歴からの試算

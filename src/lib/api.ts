@@ -1,11 +1,6 @@
-import type { Match, Room } from "@/lib/janken-types";
+import type { Match, Room, StakeTier } from "@/lib/types";
+import { PLAYER_NAME } from "@/lib/player";
 
-/**
- * Base URL for API requests.
- * - Dev (default): empty string → same origin + Vite proxy `/api` → Express
- * - Production: empty → same host as the built SPA (Express serves `dist/`)
- * - Override: set VITE_API_URL=http://localhost:3000 if you skip the proxy
- */
 export function getApiBase(): string {
   const raw = import.meta.env.VITE_API_URL;
   if (raw === undefined || raw === "") return "";
@@ -22,87 +17,49 @@ export type DashboardResponse = {
   recentMatches: Match[];
 };
 
-export async function fetchRoomById(id: string, signal?: AbortSignal): Promise<Room> {
-  const res = await fetch(`${getApiBase()}/api/rooms/${encodeURIComponent(id)}`, {
-    credentials: "include",
-    signal,
-  });
+async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${getApiBase()}${path}`, { credentials: "include", ...init });
   if (!res.ok) {
-    throw new Error(`GET /api/rooms/:id failed: ${res.status}`);
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `${init?.method ?? "GET"} ${path} failed: ${res.status}`);
   }
-  const body = (await res.json()) as { room: Room };
-  return body.room;
+  return res.json() as Promise<T>;
 }
 
-export async function fetchRooms(signal?: AbortSignal): Promise<Room[]> {
-  const res = await fetch(`${getApiBase()}/api/rooms`, {
-    credentials: "include",
-    signal,
-  });
-  if (!res.ok) {
-    throw new Error(`GET /api/rooms failed: ${res.status}`);
+export function describeApiFailure(error: unknown): string {
+  const base = getApiBase() || "(same origin / Vite proxy)";
+  if (error instanceof Error) {
+    if (error.message.includes("404") && error.message.includes("/api/me")) {
+      return `プレイヤー「${PLAYER_NAME}」が見つかりません。MySQL を起動し、npm run dev:server でシードを確認してください。`;
+    }
+    if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+      return `API に接続できません。npm run dev で client(:8080) と server(:3000) の両方を起動し、MySQL(XAMPP) が動いているか確認してください。`;
+    }
+    return `${error.message}（接続先: ${base}）`;
   }
-  const body = (await res.json()) as { rooms: Room[] };
-  return body.rooms;
+  return `API 接続を確認してください（${base}）。`;
 }
 
-export async function createRoom(input: {
-  stake: 1 | 5 | 10;
-  host?: string;
-  name?: string;
-}): Promise<Room> {
-  const res = await fetch(`${getApiBase()}/api/rooms`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      stake: input.stake,
-      host: input.host,
-      name: input.name,
-    }),
-  });
-  const body = (await res.json()) as { room?: Room; error?: string };
-  if (!res.ok) {
-    throw new Error(body.error ?? `POST /api/rooms failed: ${res.status}`);
-  }
-  if (!body.room) throw new Error("Invalid response from server");
-  return body.room;
-}
-
-export async function fetchDashboard(signal?: AbortSignal): Promise<DashboardResponse> {
-  const res = await fetch(`${getApiBase()}/api/stats/dashboard`, {
-    credentials: "include",
-    signal,
-  });
-  if (!res.ok) {
-    throw new Error(`GET /api/stats/dashboard failed: ${res.status}`);
-  }
-  return res.json() as Promise<DashboardResponse>;
-}
-
-export async function fetchMatches(limit = 80, signal?: AbortSignal): Promise<Match[]> {
-  const res = await fetch(
-    `${getApiBase()}/api/matches?limit=${encodeURIComponent(String(limit))}`,
-    {
-      credentials: "include",
+export const api = {
+  rooms: (signal?: AbortSignal) =>
+    getJson<{ rooms: Room[] }>("/api/rooms", { signal }).then((b) => b.rooms),
+  room: (id: string, signal?: AbortSignal) =>
+    getJson<{ room: Room }>(`/api/rooms/${encodeURIComponent(id)}`, { signal }).then(
+      (b) => b.room,
+    ),
+  createRoom: (input: { stake: StakeTier; host?: string; name?: string }) =>
+    getJson<{ room: Room }>("/api/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((b) => b.room),
+  matches: (limit: number, signal?: AbortSignal) =>
+    getJson<{ matches: Match[] }>(`/api/matches?limit=${limit}`, { signal }).then((b) => b.matches),
+  dashboard: (signal?: AbortSignal) =>
+    getJson<DashboardResponse>("/api/stats/dashboard", { signal }),
+  me: (playerName: string, signal?: AbortSignal) =>
+    getJson<MeResponse>("/api/me", {
       signal,
-    },
-  );
-  if (!res.ok) {
-    throw new Error(`GET /api/matches failed: ${res.status}`);
-  }
-  const body = (await res.json()) as { matches: Match[] };
-  return body.matches;
-}
-
-export async function fetchMe(playerName: string, signal?: AbortSignal): Promise<MeResponse> {
-  const res = await fetch(`${getApiBase()}/api/me`, {
-    credentials: "include",
-    signal,
-    headers: { "X-Player-Name": playerName },
-  });
-  if (!res.ok) {
-    throw new Error(`GET /api/me failed: ${res.status}`);
-  }
-  return res.json() as Promise<MeResponse>;
-}
+      headers: { "X-Player-Name": playerName },
+    }),
+};

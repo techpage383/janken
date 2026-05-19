@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useLayoutEffect } from "react";
-import { HAND_EMOJI } from "@/lib/janken-types";
-import { describeApiFailure } from "@/lib/api-error-hint";
-import { useDashboardData } from "@/lib/dashboard-query";
+import { describeApiFailure } from "@/lib/api";
+import { useDashboard } from "@/lib/queries";
+import { HAND_EMOJI, formatCoinsWithUnit } from "@/lib/types";
 import { RoomCard } from "@/components/RoomCard";
 
 export function HomePage() {
@@ -10,7 +10,7 @@ export function HomePage() {
     document.title = "BLOCK-JANKEN — Web3じゃんけん対戦プラットフォーム";
   }, []);
 
-  const { featuredRooms, recentMatches, isError, error, isFetching } = useDashboardData();
+  const { featuredRooms, recentMatches, isError, error, isFetching } = useDashboard();
 
   return (
     <main className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
@@ -104,7 +104,7 @@ export function HomePage() {
                   </div>
                 </div>
                 <span className="font-accent text-lg text-success shrink-0">
-                  +${m.payout.toFixed(2)}
+                  +{formatCoinsWithUnit(m.payout)}
                 </span>
               </div>
             ))}
@@ -124,13 +124,13 @@ export function HomePage() {
               <span className="text-primary font-mono mr-2">01</span>ルームを作るか参加する
             </li>
             <li>
-              <span className="text-primary font-mono mr-2">02</span>賞金額を選択（$1/$5/$10）
+              <span className="text-primary font-mono mr-2">02</span>コイン額を選択（10/20/50/100）
             </li>
             <li>
               <span className="text-primary font-mono mr-2">03</span>グー・チョキ・パーで勝負！
             </li>
             <li>
-              <span className="text-primary font-mono mr-2">04</span>勝者が賞金を獲得
+              <span className="text-primary font-mono mr-2">04</span>勝者がコインを獲得
             </li>
           </ol>
         </div>

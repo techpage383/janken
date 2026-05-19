@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   status VARCHAR(32) NOT NULL,
   players TEXT NOT NULL,
   created_at BIGINT NOT NULL,
-  CONSTRAINT chk_rooms_stake CHECK (stake IN (1, 5, 10)),
+  CONSTRAINT chk_rooms_stake CHECK (stake IN (10, 20, 50, 100)),
   CONSTRAINT chk_rooms_status CHECK (status IN ('waiting', 'playing', 'finished')),
   KEY idx_rooms_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

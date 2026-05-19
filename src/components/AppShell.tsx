@@ -1,7 +1,8 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { useMeData } from "@/lib/me-query";
+import { useMe } from "@/lib/queries";
+import { formatCoinsWithUnit } from "@/lib/types";
 
 const NAV = [
   { to: "/", label: "TOP" },
@@ -12,7 +13,7 @@ const NAV = [
 
 export function AppShell() {
   const { pathname: path } = useLocation();
-  const { profile, isPending, isError } = useMeData();
+  const { profile, isPending, isError } = useMe();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function AppShell() {
     ? "…"
     : isError || !profile
       ? "—"
-      : `$${profile.balance.toFixed(2)}`;
+      : formatCoinsWithUnit(profile.balance);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-display">
