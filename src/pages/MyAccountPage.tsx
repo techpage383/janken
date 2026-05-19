@@ -1,4 +1,6 @@
-import { useLayoutEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLayoutEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   Area,
   AreaChart,
@@ -8,16 +10,41 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { describeApiFailure } from "@/lib/api";
-import { useMe } from "@/lib/queries";
-import { HAND_EMOJI, HAND_JP, type Match, formatCoinsWithUnit } from "@/lib/types";
+import { api, describeApiFailure } from "@/lib/api";
+import { PLAYER_NAME } from "@/lib/player";
+import { meQueryKey, useMe } from "@/lib/queries";
+import {
+  AVATAR_PRESETS,
+  HAND_EMOJI,
+  HAND_JP,
+  type AvatarPreset,
+  type Match,
+  formatCoinsWithUnit,
+} from "@/lib/types";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 
 export function MyAccountPage() {
   useLayoutEffect(() => {
     document.title = "マイページ — BLOCK-JANKEN";
   }, []);
 
+  const queryClient = useQueryClient();
   const { profile, matches, isPending, isError, error } = useMe();
+  const [picked, setPicked] = useState<AvatarPreset | null>(null);
+
+  const saveAvatar = useMutation({
+    mutationFn: (avatar: AvatarPreset) => api.updateAvatar(PLAYER_NAME, avatar),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(meQueryKey(PLAYER_NAME), (old) =>
+        old ? { ...old, profile: updated } : undefined,
+      );
+      setPicked(null);
+      toast.success("アバターを保存しました");
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "保存に失敗しました");
+    },
+  });
 
   if (isPending) {
     return (
@@ -61,11 +88,7 @@ export function MyAccountPage() {
     <main className="max-w-7xl mx-auto p-6 space-y-6">
       <header className="glass-panel rounded-2xl p-6 flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="size-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px]">
-            <div className="w-full h-full rounded-full bg-card grid place-items-center font-accent text-2xl text-primary">
-              {playerName[0]}
-            </div>
-          </div>
+          <PlayerAvatar name={playerName} avatar={profile.avatar} size="md" />
           <div>
             <h1 className="text-2xl font-black">{playerName}</h1>
             <p className="text-[10px] font-mono text-white/40">{profile.wallet}</p>
@@ -86,6 +109,39 @@ export function MyAccountPage() {
           残高は DB の値。グラフは対戦履歴からの試算です。
         </p>
       </header>
+
+      <section className="glass-panel rounded-2xl p-6">
+        <p className="text-[10px] font-mono text-white/40 tracking-widest mb-3">アバター</p>
+        <div className="flex flex-wrap gap-2">
+          {AVATAR_PRESETS.map((emoji) => {
+            const selected = (picked ?? profile.avatar) === emoji;
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => setPicked(emoji)}
+                className={
+                  "size-12 rounded-xl border text-2xl transition-colors " +
+                  (selected
+                    ? "border-primary bg-primary/20"
+                    : "border-border bg-white/5 hover:border-primary/50")
+                }
+                aria-label={`アバター ${emoji}`}
+              >
+                {emoji}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          disabled={!picked || picked === profile.avatar || saveAvatar.isPending}
+          onClick={() => picked && saveAvatar.mutate(picked)}
+          className="mt-4 px-6 py-2 bg-primary text-primary-foreground font-black text-sm disabled:opacity-40"
+        >
+          {saveAvatar.isPending ? "保存中…" : "アバターを保存"}
+        </button>
+      </section>
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-4 space-y-4">

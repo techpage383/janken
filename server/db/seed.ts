@@ -10,10 +10,11 @@ export async function seedIfEmpty(): Promise<void> {
   try {
     await conn.beginTransaction();
 
-    await conn.query(`INSERT INTO players (name, wallet, balance) VALUES (?, ?, ?)`, [
+    await conn.query(`INSERT INTO players (name, wallet, balance, avatar) VALUES (?, ?, ?, ?)`, [
       SEED_PLAYER.name,
       SEED_PLAYER.wallet,
       SEED_PLAYER.balance,
+      SEED_PLAYER.avatar,
     ]);
 
     for (const r of SEED_ROOMS) {

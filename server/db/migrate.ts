@@ -17,6 +17,17 @@ export async function migrate(): Promise<void> {
   }
 
   await migrateStakeTiers();
+  await migratePlayerAvatar();
+}
+
+async function migratePlayerAvatar(): Promise<void> {
+  try {
+    await pool.query(
+      `ALTER TABLE players ADD COLUMN avatar VARCHAR(16) NOT NULL DEFAULT '🎮'`,
+    );
+  } catch {
+    /* column already exists */
+  }
 }
 
 /** Upgrade DBs created before virtual-coin tiers (1/5/10 → 10/20/50/100). */
@@ -26,9 +37,9 @@ async function migrateStakeTiers(): Promise<void> {
   );
   const alreadyMigrated = Number((countRows as { c: number }[])[0]?.c) > 0;
 
-  // Drop old CHECK first — otherwise UPDATE to 20/50 fails while constraint still allows 1|5|10.
+  // MariaDB (XAMPP): use DROP CONSTRAINT, not DROP CHECK.
   try {
-    await pool.query(`ALTER TABLE rooms DROP CHECK chk_rooms_stake`);
+    await pool.query(`ALTER TABLE rooms DROP CONSTRAINT chk_rooms_stake`);
   } catch {
     /* missing or already dropped */
   }
@@ -50,7 +61,7 @@ async function migrateStakeTiers(): Promise<void> {
 
   try {
     await pool.query(
-      `ALTER TABLE rooms ADD CONSTRAINT chk_rooms_stake CHECK (stake IN (10, 20, 50, 100))`,
+      `ALTER TABLE rooms ADD CONSTRAINT chk_rooms_stake CHECK (\`stake\` IN (10, 20, 50, 100))`,
     );
   } catch {
     /* already applied */

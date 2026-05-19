@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { PLAYER_NAME } from "@/lib/player";
 
 export const roomsQueryKey = ["rooms"] as const;
+export const meQueryKey = (playerName: string) => ["me", playerName] as const;
 
 export function useDashboard() {
   const q = useQuery({
@@ -60,7 +61,7 @@ export function useMatches(limit = 120) {
 
 export function useMe(playerName = PLAYER_NAME) {
   const q = useQuery({
-    queryKey: ["me", playerName],
+    queryKey: meQueryKey(playerName),
     queryFn: ({ signal }) => api.me(playerName, signal),
     staleTime: 20_000,
   });

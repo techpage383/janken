@@ -1,5 +1,34 @@
 /** Shared types + virtual coin helpers (frontend + server import this file). */
 
+export const AVATAR_PRESETS = [
+  "🎮",
+  "🦊",
+  "🐱",
+  "🐉",
+  "👾",
+  "🤖",
+  "💎",
+  "🔥",
+  "⚡",
+  "🎯",
+  "🎲",
+  "🃏",
+] as const;
+
+export type AvatarPreset = (typeof AVATAR_PRESETS)[number];
+export const DEFAULT_AVATAR: AvatarPreset = "🎮";
+
+export function isAvatarPreset(value: string): value is AvatarPreset {
+  return (AVATAR_PRESETS as readonly string[]).includes(value);
+}
+
+export type PlayerProfile = {
+  name: string;
+  wallet: string;
+  balance: number;
+  avatar: AvatarPreset;
+};
+
 export type Hand = "rock" | "paper" | "scissors";
 export type RoomStatus = "waiting" | "playing" | "finished";
 

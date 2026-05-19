@@ -8,6 +8,7 @@ export const SEED_PLAYER = {
   name: "Player_404",
   wallet: "0x71C...8e9A",
   balance: 12_450,
+  avatar: "🎮",
 };
 
 const HOSTS = [

@@ -1,6 +1,7 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useMe } from "@/lib/queries";
 import { formatCoinsWithUnit } from "@/lib/types";
 
@@ -72,10 +73,16 @@ export function AppShell() {
               <div className="size-2 shrink-0 rounded-full bg-success animate-pulse" />
               <span className="font-mono text-xs uppercase tracking-tighter">Online: 1,284</span>
             </div>
-            <div className="hidden items-center gap-2 rounded-lg border border-border bg-white/5 px-3 py-1.5 sm:flex">
+            <Link
+              to="/mypage"
+              className="hidden items-center gap-2 rounded-lg border border-border bg-white/5 px-3 py-1.5 sm:flex hover:border-primary/40 transition-colors"
+            >
+              {profile ? (
+                <PlayerAvatar name={profile.name} avatar={profile.avatar} size="sm" />
+              ) : null}
               <span className="text-[10px] font-mono text-white/40">BAL</span>
               <span className="font-accent text-lg leading-none text-primary">{balanceLabel}</span>
-            </div>
+            </Link>
             <button
               type="button"
               className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-white/5 text-white/80 touch-manipulation hover:bg-white/10 md:hidden"

@@ -1,4 +1,4 @@
-import type { Match, Room, StakeTier } from "@/lib/types";
+import type { AvatarPreset, Match, PlayerProfile, Room, StakeTier } from "@/lib/types";
 import { PLAYER_NAME } from "@/lib/player";
 
 export function getApiBase(): string {
@@ -8,7 +8,7 @@ export function getApiBase(): string {
 }
 
 export type MeResponse = {
-  profile: { name: string; wallet: string; balance: number };
+  profile: PlayerProfile;
   matches: Match[];
 };
 
@@ -62,4 +62,10 @@ export const api = {
       signal,
       headers: { "X-Player-Name": playerName },
     }),
+  updateAvatar: (playerName: string, avatar: AvatarPreset) =>
+    getJson<{ profile: PlayerProfile }>("/api/me/avatar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "X-Player-Name": playerName },
+      body: JSON.stringify({ avatar }),
+    }).then((b) => b.profile),
 };

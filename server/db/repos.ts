@@ -1,5 +1,14 @@
 /** All MySQL access in one file. */
-import type { Hand, Match, Room, RoomStatus, StakeTier } from "../../src/lib/types.ts";
+import {
+  DEFAULT_AVATAR,
+  isAvatarPreset,
+  type Hand,
+  type Match,
+  type PlayerProfile,
+  type Room,
+  type RoomStatus,
+  type StakeTier,
+} from "../../src/lib/types.ts";
 import { pool } from "./pool.ts";
 
 type RoomRow = {
@@ -129,11 +138,33 @@ export async function listMatchesForPlayer(player: string, limit: number): Promi
   return (rows as MatchRow[]).map(toMatch);
 }
 
-export async function getPlayer(name: string) {
-  const [rows] = await pool.query("SELECT name, wallet, balance FROM players WHERE name = ?", [
-    name,
-  ]);
-  const r = (rows as { name: string; wallet: string; balance: string | number }[])[0];
-  if (!r) return null;
-  return { name: r.name, wallet: r.wallet, balance: Number(r.balance) };
+type PlayerRow = {
+  name: string;
+  wallet: string;
+  balance: string | number;
+  avatar?: string;
+};
+
+function toPlayer(row: PlayerRow): PlayerProfile {
+  const avatar =
+    row.avatar && isAvatarPreset(row.avatar) ? row.avatar : DEFAULT_AVATAR;
+  return { name: row.name, wallet: row.wallet, balance: Number(row.balance), avatar };
+}
+
+export async function getPlayer(name: string): Promise<PlayerProfile | null> {
+  const [rows] = await pool.query(
+    "SELECT name, wallet, balance, avatar FROM players WHERE name = ?",
+    [name],
+  );
+  const r = (rows as PlayerRow[])[0];
+  return r ? toPlayer(r) : null;
+}
+
+export async function updatePlayerAvatar(
+  name: string,
+  avatar: string,
+): Promise<PlayerProfile | null> {
+  if (!isAvatarPreset(avatar)) return null;
+  await pool.query("UPDATE players SET avatar = ? WHERE name = ?", [avatar, name]);
+  return getPlayer(name);
 }

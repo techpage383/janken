@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
-import { STAKE_TIERS } from "../src/lib/types.ts";
+import { isAvatarPreset, STAKE_TIERS } from "../src/lib/types.ts";
 import { config } from "./config.ts";
 import { SEED_PLAYER } from "./db/seed-data.ts";
 import * as db from "./db/repos.ts";
@@ -26,6 +26,11 @@ function wrap(
   return (req, res, next) => {
     void fn(req, res).catch(next);
   };
+}
+
+function playerNameFromRequest(req: Request): string {
+  const header = req.headers["x-player-name"];
+  return typeof header === "string" && header.trim() ? header.trim() : SEED_PLAYER.name;
 }
 
 const createRoomBody = z.object({
@@ -101,13 +106,25 @@ export function createApp(): express.Application {
   app.get(
     "/api/me",
     wrap(async (req, res) => {
-      const header = req.headers["x-player-name"];
-      const name =
-        typeof header === "string" && header.trim() ? header.trim() : SEED_PLAYER.name;
+      const name = playerNameFromRequest(req);
       const profile = await db.getPlayer(name);
       if (!profile) throw new ApiError(404, "Unknown player");
       const matches = await db.listMatchesForPlayer(name, 100);
       res.json({ profile, matches });
+    }),
+  );
+
+  app.patch(
+    "/api/me/avatar",
+    wrap(async (req, res) => {
+      const name = playerNameFromRequest(req);
+      const avatar = typeof req.body?.avatar === "string" ? req.body.avatar : "";
+      if (!isAvatarPreset(avatar)) {
+        throw new ApiError(400, "avatar must be one of the preset emojis");
+      }
+      const profile = await db.updatePlayerAvatar(name, avatar);
+      if (!profile) throw new ApiError(404, "Unknown player");
+      res.json({ profile });
     }),
   );
 

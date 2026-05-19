@@ -41,6 +41,7 @@ server/
 | GET | `/api/rooms/:id` | ルーム詳細 |
 | GET | `/api/matches` | 対戦履歴 |
 | GET | `/api/me` | 自分のプロフィール（ヘッダ `X-Player-Name`） |
+| PATCH | `/api/me/avatar` | アバター変更 `{ "avatar": "🦊" }`（プリセット絵文字のみ） |
 | GET | `/api/stats/dashboard` | トップ用まとめ |
 
 ## 仮想コイン
