@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/Toaster";
+import { KonamiRainbow } from "@/components/KonamiRainbow";
 import { HistoryPage } from "@/pages/HistoryPage";
 import { HomePage } from "@/pages/HomePage";
 import { MyAccountPage } from "@/pages/MyAccountPage";
@@ -25,6 +26,7 @@ function RootLayout() {
     <>
       <AppShell />
       <Toaster />
+      <KonamiRainbow />
     </>
   );
 }

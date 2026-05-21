@@ -158,3 +158,62 @@
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: 283; }
 }
+
+/* === Confetti === */
+.fun-confetti-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+.fun-confetti-piece {
+  position: absolute;
+  border-radius: 2px;
+  will-change: transform, opacity;
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0,0,0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--drift,0), 110vh, 0) rotate(var(--rot,360deg)); opacity: 0.85; }
+}
+
+/* === Mascot === */
+@keyframes mascot-run-lr {
+  0%   { transform: translateX(-10vw); }
+  100% { transform: translateX(110vw); }
+}
+@keyframes mascot-run-rl {
+  0%   { transform: translateX(110vw) scaleX(-1); }
+  100% { transform: translateX(-10vw) scaleX(-1); }
+}
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50%      { transform: translateY(-10px) rotate(8deg); }
+}
+.animate-mascot-bob {
+  animation: mascot-bob 0.35s ease-in-out infinite;
+}
+
+/* === Rainbow easter-egg mode === */
+@keyframes rainbow-hue {
+  from { filter: hue-rotate(0deg) saturate(1.4); }
+  to   { filter: hue-rotate(360deg) saturate(1.4); }
+}
+body.rainbow-mode {
+  animation: rainbow-hue 6s linear infinite;
+}
+body.rainbow-mode::after {
+  content: "🌈 RAINBOW MODE";
+  position: fixed;
+  top: 70px;
+  right: 12px;
+  z-index: 9999;
+  font-family: var(--font-accent);
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,#f43f5e,#fbbf24,#34d399,#60a5fa,#a78bfa);
+  color: #000;
+  pointer-events: none;
+}
