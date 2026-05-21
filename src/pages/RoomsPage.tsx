@@ -13,6 +13,9 @@ import {
   type StakeTier,
 } from "@/lib/types";
 import { RoomCard } from "@/components/RoomCard";
+import { Mascot } from "@/components/Mascot";
+import { pick, FUNNY_LOADING } from "@/lib/fun";
+import { useEffect, useState as useStateAlias } from "react";
 
 type StakeFilter = "all" | StakeTier;
 type LobbyStatusFilter = "all" | "waiting";
@@ -23,6 +26,12 @@ export function RoomsPage() {
   }, []);
 
   const { rooms, isError, error, isFetching } = useRooms();
+  const [funnyMsg, setFunnyMsg] = useStateAlias(() => pick(FUNNY_LOADING));
+  useEffect(() => {
+    if (!isFetching) return;
+    const id = setInterval(() => setFunnyMsg(pick(FUNNY_LOADING)), 1800);
+    return () => clearInterval(id);
+  }, [isFetching]);
 
   const [stake, setStake] = useState<StakeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<LobbyStatusFilter>("all");
@@ -48,7 +57,7 @@ export function RoomsPage() {
           </h1>
           <p className="text-white/40 font-mono text-xs mt-2 tracking-widest uppercase">
             [LOBBY] {filtered.length} active rooms
-            {isFetching ? " · 更新中…" : ""}
+            {isFetching ? ` · ${funnyMsg}` : ""}
             {isError ? " · API接続エラー" : ""}
           </p>
         </div>
@@ -98,6 +107,7 @@ export function RoomsPage() {
       </div>
 
       {open && <CreateRoomModal onClose={() => setOpen(false)} />}
+      <Mascot />
     </main>
   );
 }
