@@ -1,5 +1,6 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useRoom } from "@/lib/queries";
 import {
   HAND_EMOJI,
@@ -12,6 +13,14 @@ import {
   type Room,
 } from "@/lib/types";
 import { PLAYER_NAME } from "@/lib/player";
+import {
+  fireConfetti,
+  playBlip,
+  pick,
+  FUNNY_WIN_TOASTS,
+  FUNNY_LOSS_TOASTS,
+  FUNNY_DRAW_TOASTS,
+} from "@/lib/fun";
 
 function RoomNotFound() {
   return (
@@ -184,6 +193,17 @@ function RoomDetailContent({
       setPhase("reveal");
       const w = determineWinner(h, opp);
       setLog((l) => [{ round: roundRef.current, a: h, b: opp, winner: w }, ...l].slice(0, 8));
+      if (w === "a") {
+        fireConfetti();
+        playBlip("win");
+        toast.success(pick(FUNNY_WIN_TOASTS));
+      } else if (w === "b") {
+        playBlip("lose");
+        toast(pick(FUNNY_LOSS_TOASTS));
+      } else {
+        playBlip("draw");
+        toast(pick(FUNNY_DRAW_TOASTS));
+      }
       setTimeout(() => {
         setRound((r) => r + 1);
         setMyHand(null);
